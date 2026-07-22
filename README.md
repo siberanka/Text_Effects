@@ -1,6 +1,6 @@
 # Text Effects — siberanka Gradient Edition
 
-Minecraft Java Edition metinlerine renk koduyla tetiklenen shader efektleri ekleyen, [TheSalt's Text Effects](https://github.com/TheSalts/Text_Effects) tabanlı kaynak paketi. Bu fork mevcut efektleri korur ve rütbe/etiket kullanımı için 16 koyudan açığa statik gradyan içerir.
+Minecraft Java Edition metinlerine renk koduyla tetiklenen shader efektleri ekleyen, [TheSalt's Text Effects](https://github.com/TheSalts/Text_Effects) tabanlı kaynak paketi. Bu fork mevcut efektleri korur ve rütbe/etiket kullanımı için 16 statik, 16 sağdan sola akan koyu-açık gradyan içerir.
 
 > [!IMPORTANT]
 > Paket `rendertype_text` çekirdek shader'ını değiştirir. Aynı shader'ı değiştiren başka bir kaynak paketiyle birlikte kullanılamaz; kaynak paketi listesinde üstte olan paket diğerini ezer.
@@ -28,7 +28,7 @@ Tek ZIP, Minecraft Java Edition kaynak paketi formatı 7–100 aralığını bil
 
 1.20.2 öncesi istemciler `supported_formats` alanını tanımadığı için paketi uyumsuz işaretleyebilir; bu, tek ZIP ile eski ve yeni metadata biçimlerini aynı anda taşımanın doğal sonucudur. Paket yine de “Evet” seçilerek yüklenir. Sunucu dağıtımında istemci paketi doğrudan uygular.
 
-## Rütbe gradyanları
+## Statik rütbe gradyanları
 
 Her gradyanda ilk renk koyu temel, ikinci renk daha açık tamamlayıcıdır. Yön yukarıdan aşağıya `4.0` olarak sabittir. Tetikleyiciler ve otomatik gölge renkleri birbirleriyle çakışmaması için dördün katlarından seçilmiştir.
 
@@ -51,16 +51,40 @@ Her gradyanda ilk renk koyu temel, ikinci renk daha açık tamamlayıcıdır. Y�
 | Eflatun → Açık eflatun | `#F8FCF0` | `#3E3F3C` | `#701868` → `#E870DC` |
 | Kahverengi → Açık kahverengi | `#F8FCF4` | `#3E3F3D` | `#5C3418` → `#BC7C4C` |
 
+## Sağdan sola akan rütbe efektleri
+
+Bu kodlar aynı koyu-açık paletleri RGB/rainbow efekti gibi sürekli hareket ettirir. Görsel akış sağdan sola; shader'ın pozitif X fazı `direction=2.0`, hız `500.0` değeridir. İlk renk her zaman koyu kaynak renktir.
+
+| Akan efekt | Yeni tetikleyici | Otomatik gölge | Görünen koyu ↔ açık renk |
+| --- | --- | --- | --- |
+| Gri ↔ Beyaz | `#F8FCF8` | `#3E3F3E` | `#606060` ↔ `#FFFFFF` |
+| Sarı ↔ Açık sarı | `#F8FCFC` | `#3E3F3F` | `#CC9C00` ↔ `#FFF480` |
+| Turuncu ↔ Açık turuncu | `#FCF8DC` | `#3F3E37` | `#B84800` ↔ `#FFB45C` |
+| Mavi ↔ Camgöbeği | `#FCF8E0` | `#3F3E38` | `#1860B8` ↔ `#40E0FF` |
+| Lacivert ↔ Açık lacivert | `#FCF8E4` | `#3F3E39` | `#0C2070` ↔ `#4060C0` |
+| Kırmızı ↔ Açık kırmızı | `#FCF8E8` | `#3F3E3A` | `#981818` ↔ `#FF6868` |
+| Yeşil ↔ Açık yeşil | `#FCF8EC` | `#3F3E3B` | `#147034` ↔ `#60E084` |
+| Mor ↔ Açık mor | `#FCF8F0` | `#3F3E3C` | `#501C80` ↔ `#B070E8` |
+| Pembe ↔ Açık pembe | `#FCF8F4` | `#3F3E3D` | `#983064` ↔ `#FF90C4` |
+| Koyu gri ↔ Gri | `#FCF8F8` | `#3F3E3E` | `#242424` ↔ `#808080` |
+| Siyah ↔ Füme | `#FCF8FC` | `#3F3E3F` | `#080808` ↔ `#484848` |
+| Koyu yeşil ↔ Yeşil | `#FCFCDC` | `#3F3F37` | `#084018` ↔ `#34984C` |
+| Koyu turkuaz ↔ Turkuaz | `#FCFCE0` | `#3F3F38` | `#005854` ↔ `#48C8C0` |
+| Camgöbeği ↔ Açık camgöbeği | `#FCFCE4` | `#3F3F39` | `#007088` ↔ `#70ECF8` |
+| Eflatun ↔ Açık eflatun | `#FCFCE8` | `#3F3F3A` | `#701868` ↔ `#E870DC` |
+| Kahverengi ↔ Açık kahverengi | `#FCFCEC` | `#3F3F3B` | `#5C3418` ↔ `#BC7C4C` |
+
 Kısa örnek:
 
 ```mcfunction
 tellraw @a {"text":"[ADMIN]","color":"#F8F8F0","bold":true}
 title @a title {"text":"VIP","color":"#F8F8E0","bold":true}
+title @a actionbar {"text":"AKAN MAVI","color":"#FCF8E0","bold":true}
 ```
 
 ## Kaynak paketteki tüm tetikleyici renk kodları
 
-Aşağıdaki liste `_config.glsl` içindeki 51 tetikleyicinin tamamıdır. “Gölge” sütunu efektin Minecraft'ın metin gölgesine de uygulandığını gösterir.
+Aşağıdaki liste `_config.glsl` içindeki 67 tetikleyicinin tamamıdır. “Gölge” sütunu efektin Minecraft'ın metin gölgesine de uygulandığını gösterir.
 
 | Kod | Efekt | Görünür renk/renkler | Gölge |
 | --- | --- | --- | :---: |
@@ -115,6 +139,22 @@ Aşağıdaki liste `_config.glsl` içindeki 51 tetikleyicinin tamamıdır. “G�
 | `#F8FCEC` | Camgöbeği → Açık camgöbeği | `#007088` → `#70ECF8` | Evet |
 | `#F8FCF0` | Eflatun → Açık eflatun | `#701868` → `#E870DC` | Evet |
 | `#F8FCF4` | Kahverengi → Açık kahverengi | `#5C3418` → `#BC7C4C` | Evet |
+| `#F8FCF8` | Akan Gri ↔ Beyaz (←) | `#606060` ↔ `#FFFFFF` | Evet |
+| `#F8FCFC` | Akan Sarı ↔ Açık sarı (←) | `#CC9C00` ↔ `#FFF480` | Evet |
+| `#FCF8DC` | Akan Turuncu ↔ Açık turuncu (←) | `#B84800` ↔ `#FFB45C` | Evet |
+| `#FCF8E0` | Akan Mavi ↔ Camgöbeği (←) | `#1860B8` ↔ `#40E0FF` | Evet |
+| `#FCF8E4` | Akan Lacivert ↔ Açık lacivert (←) | `#0C2070` ↔ `#4060C0` | Evet |
+| `#FCF8E8` | Akan Kırmızı ↔ Açık kırmızı (←) | `#981818` ↔ `#FF6868` | Evet |
+| `#FCF8EC` | Akan Yeşil ↔ Açık yeşil (←) | `#147034` ↔ `#60E084` | Evet |
+| `#FCF8F0` | Akan Mor ↔ Açık mor (←) | `#501C80` ↔ `#B070E8` | Evet |
+| `#FCF8F4` | Akan Pembe ↔ Açık pembe (←) | `#983064` ↔ `#FF90C4` | Evet |
+| `#FCF8F8` | Akan Koyu gri ↔ Gri (←) | `#242424` ↔ `#808080` | Evet |
+| `#FCF8FC` | Akan Siyah ↔ Füme (←) | `#080808` ↔ `#484848` | Evet |
+| `#FCFCDC` | Akan Koyu yeşil ↔ Yeşil (←) | `#084018` ↔ `#34984C` | Evet |
+| `#FCFCE0` | Akan Koyu turkuaz ↔ Turkuaz (←) | `#005854` ↔ `#48C8C0` | Evet |
+| `#FCFCE4` | Akan Camgöbeği ↔ Açık camgöbeği (←) | `#007088` ↔ `#70ECF8` | Evet |
+| `#FCFCE8` | Akan Eflatun ↔ Açık eflatun (←) | `#701868` ↔ `#E870DC` | Evet |
+| `#FCFCEC` | Akan Kahverengi ↔ Açık kahverengi (←) | `#5C3418` ↔ `#BC7C4C` | Evet |
 
 ## Kullanılabilir efekt API'si
 
@@ -124,8 +164,8 @@ Paket shake, wavy, rainbow, bouncy, blinking, pulse, spin, sequential spin, fade
 
 ```sh
 python scripts/validate_pack.py
-python scripts/build_release.py --output dist/Text-Effects-v1.2.0.zip
-python scripts/validate_pack.py --zip dist/Text-Effects-v1.2.0.zip
+python scripts/build_release.py --output dist/Text-Effects-v1.3.0.zip
+python scripts/validate_pack.py --zip dist/Text-Effects-v1.3.0.zip
 ```
 
 Mojang'ın SHA-1 doğrulamalı resmî istemci JAR'larıyla shader ABI sınır kontrolü:

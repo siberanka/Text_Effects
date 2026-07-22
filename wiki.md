@@ -1,10 +1,17 @@
 # Sunucu ve Haritalarda Kullanım Rehberi
 
-Bu rehber `siberanka/Text_Effects` v1.2.0 paketini Minecraft Java Edition 1.17.x–26.x istemcilerinde rütbe, prefix, başlık, actionbar ve harita metinlerinde kullanmak içindir.
+Bu rehber `siberanka/Text_Effects` v1.3.0 paketini Minecraft Java Edition 1.17.x–26.x istemcilerinde rütbe, prefix, başlık, actionbar ve harita metinlerinde kullanmak içindir.
 
 ## 1. Temel kural
 
 Efekti seçen değer, görünen gradyan değil tetikleyici renktir. Örneğin kırmızı rütbe gradyanını göstermek için metni `#F8F8F0` yapın; shader bunu `#981818` → `#FF6868` olarak çizer.
+
+Her paletin iki ayrı kodu vardır:
+
+- Statik kırmızı gradyan: `#F8F8F0`.
+- Sağdan sola akan kırmızı efekt: `#FCF8E8`.
+
+Akan varyantlarda koyu kaynak renk ile açık tamamlayıcı sürekli yer değiştirerek sağdan sola ilerler; plugin tarafında ayrıca gradient tanımlanmaz.
 
 - Renk tam eşleşmelidir. `#F8F8F0` yerine yakın bir renk çalışmaz.
 - Bir metnin yalnızca istediğiniz bölümlerine tetikleyici renk verin.
@@ -14,7 +21,7 @@ Efekti seçen değer, görünen gradyan değil tetikleyici renktir. Örneğin k�
 
 ## 2. Paketi istemciye kurma
 
-1. Release sayfasından `Text-Effects-v1.2.0.zip` dosyasını indirin.
+1. Release sayfasından `Text-Effects-v1.3.0.zip` dosyasını indirin.
 2. ZIP'i açmadan `.minecraft/resourcepacks/` içine koyun.
 3. Minecraft'ta **Ayarlar → Kaynak Paketleri** ekranından etkinleştirin.
 4. Paket 1.17–1.20.1'de eski istemcilerin metadata sınırlaması nedeniyle uyumsuz görünebilir. Uyarıyı onaylayıp yükleyin.
@@ -25,14 +32,14 @@ Efekti seçen değer, görünen gradyan değil tetikleyici renktir. Örneğin k�
 ZIP'i doğrudan HTTPS indirme bağlantısı veren bir adreste barındırın. GitHub release bağlantısı:
 
 ```text
-https://github.com/siberanka/Text_Effects/releases/download/v1.2.0/Text-Effects-v1.2.0.zip
+https://github.com/siberanka/Text_Effects/releases/download/v1.3.0/Text-Effects-v1.3.0.zip
 ```
 
 `server.properties` örneği:
 
 ```properties
-resource-pack=https://github.com/siberanka/Text_Effects/releases/download/v1.2.0/Text-Effects-v1.2.0.zip
-resource-pack-sha1=4886a87a3ac4ebc4aa0b88579b0b854412a24aa4
+resource-pack=https://github.com/siberanka/Text_Effects/releases/download/v1.3.0/Text-Effects-v1.3.0.zip
+resource-pack-sha1=ea93aa9970b76599600eb166423f70e35077bc9f
 require-resource-pack=true
 resource-pack-prompt={"text":"Rütbe gradyanlarını görebilmek için kaynak paketini kabul etmelisiniz.","color":"yellow"}
 ```
@@ -40,18 +47,18 @@ resource-pack-prompt={"text":"Rütbe gradyanlarını görebilmek için kaynak pa
 Dosya doğrulama değerleri:
 
 ```text
-SHA-1   4886A87A3AC4EBC4AA0B88579B0B854412A24AA4
-SHA-256 955E9C14866ECF3AF53F757492CDCE91DA1CF53E72A868DC8100A89AF5BBE3A2
+SHA-1   EA93AA9970B76599600EB166423F70E35077BC9F
+SHA-256 AC5B5E3E06DE11518F470CABFA5E1662AA9DEB28D401CD39B33A49D22868648F
 ```
 
 Paketi değiştirdiğinizde ZIP'i yeniden üretin ve `resource-pack-sha1` değerini de değiştirin. Hash almak için:
 
 ```powershell
-Get-FileHash -Algorithm SHA1 .\Text-Effects-v1.2.0.zip
+Get-FileHash -Algorithm SHA1 .\Text-Effects-v1.3.0.zip
 ```
 
 ```sh
-sha1sum Text-Effects-v1.2.0.zip
+sha1sum Text-Effects-v1.3.0.zip
 ```
 
 Sunucuyu yeniden başlattıktan sonra temiz bir istemci profiliyle bağlanın. İstemci daha önce aynı URL'den farklı içerik önbelleğe aldıysa URL'ye yeni sürüm etiketi verin.
@@ -81,6 +88,7 @@ Yalnızca `[ADMIN]` kırmızı gradyan olur; devamındaki beyaz metin normal çi
 /title @a title {"text":"VIP","color":"#F8F8E0","bold":true}
 /title @a subtitle {"text":"Yeni rütben hayırlı olsun!","color":"white"}
 /title @a actionbar {"text":"MAVİ TAKIM","color":"#F8F8E8","bold":true}
+/title @a actionbar {"text":"AKAN MAVİ TAKIM","color":"#FCF8E0","bold":true}
 ```
 
 ### Takım prefix'i
@@ -115,6 +123,7 @@ Adventure/MiniMessage kullanan bir plugin'de tek ve sabit renk verin:
 <#F8F8F0><bold>[ADMIN]</bold></#F8F8F0>
 <#F8F8E0><bold>[VIP]</bold></#F8F8E0>
 <#F8F8E8><bold>[MAVI]</bold></#F8F8E8>
+<#FCF8E0><bold>[AKAN MAVI]</bold></#FCF8E0>
 ```
 
 Şunu kullanmayın:
@@ -141,15 +150,15 @@ Header, footer, nametag prefix ve scoreboard satırlarında aynı tetikleyiciyi 
 
 ## 7. Önerilen rütbe eşlemeleri
 
-| Rütbe örneği | Kod | Gradyan |
-| --- | --- | --- |
-| Kurucu / Owner | `#F8F8EC` | Lacivert → Açık lacivert |
-| Admin | `#F8F8F0` | Kırmızı → Açık kırmızı |
-| Moderatör | `#F8F8E8` | Mavi → Camgöbeği |
-| VIP+ | `#F8F8E4` | Turuncu → Açık turuncu |
-| VIP | `#F8F8E0` | Sarı → Açık sarı |
-| Destekçi | `#F8F8F4` | Yeşil → Açık yeşil |
-| Oyuncu | `#F8F8DC` | Gri → Beyaz |
+| Rütbe örneği | Statik kod | Sağa → sola akan kod | Palet |
+| --- | --- | --- | --- |
+| Kurucu / Owner | `#F8F8EC` | `#FCF8E4` | Lacivert ↔ Açık lacivert |
+| Admin | `#F8F8F0` | `#FCF8E8` | Kırmızı ↔ Açık kırmızı |
+| Moderatör | `#F8F8E8` | `#FCF8E0` | Mavi ↔ Camgöbeği |
+| VIP+ | `#F8F8E4` | `#FCF8DC` | Turuncu ↔ Açık turuncu |
+| VIP | `#F8F8E0` | `#F8FCFC` | Sarı ↔ Açık sarı |
+| Destekçi | `#F8F8F4` | `#FCF8EC` | Yeşil ↔ Açık yeşil |
+| Oyuncu | `#F8F8DC` | `#F8FCF8` | Gri ↔ Beyaz |
 
 ## 8. Sorun giderme
 

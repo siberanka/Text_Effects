@@ -21,6 +21,10 @@ ENTRY_RE = re.compile(
 GRADIENT_RE = re.compile(
     r"apply_gradient\(\s*rgb\(([^)]*)\)\s*,\s*rgb\(([^)]*)\)\s*,\s*([0-9.]+)\s*\)"
 )
+DYNAMIC_GRADIENT_RE = re.compile(
+    r"apply_dynamic_gradient\(\s*rgb\(([^)]*)\)\s*,\s*rgb\(([^)]*)\)\s*,"
+    r"\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\)"
+)
 
 RANK_GRADIENTS = {
     "F8F8DC": ((96, 96, 96), (255, 255, 255)),
@@ -39,6 +43,25 @@ RANK_GRADIENTS = {
     "F8FCEC": ((0, 112, 136), (112, 236, 248)),
     "F8FCF0": ((112, 24, 104), (232, 112, 220)),
     "F8FCF4": ((92, 52, 24), (188, 124, 76)),
+}
+
+ANIMATED_RANK_GRADIENTS = {
+    "F8FCF8": RANK_GRADIENTS["F8F8DC"],
+    "F8FCFC": RANK_GRADIENTS["F8F8E0"],
+    "FCF8DC": RANK_GRADIENTS["F8F8E4"],
+    "FCF8E0": RANK_GRADIENTS["F8F8E8"],
+    "FCF8E4": RANK_GRADIENTS["F8F8EC"],
+    "FCF8E8": RANK_GRADIENTS["F8F8F0"],
+    "FCF8EC": RANK_GRADIENTS["F8F8F4"],
+    "FCF8F0": RANK_GRADIENTS["F8F8F8"],
+    "FCF8F4": RANK_GRADIENTS["F8F8FC"],
+    "FCF8F8": RANK_GRADIENTS["F8FCDC"],
+    "FCF8FC": RANK_GRADIENTS["F8FCE0"],
+    "FCFCDC": RANK_GRADIENTS["F8FCE4"],
+    "FCFCE0": RANK_GRADIENTS["F8FCE8"],
+    "FCFCE4": RANK_GRADIENTS["F8FCEC"],
+    "FCFCE8": RANK_GRADIENTS["F8FCF0"],
+    "FCFCEC": RANK_GRADIENTS["F8FCF4"],
 }
 
 
@@ -126,8 +149,8 @@ def validate_color_registry() -> None:
                 )
             shadow_colors[shadow] = code
 
-    if len(entries) != 51:
-        raise ValidationError(f"Expected 51 trigger colors, found {len(entries)}")
+    if len(entries) != 67:
+        raise ValidationError(f"Expected 67 trigger colors, found {len(entries)}")
 
     main_colors = {value[1] for value in entries.values()}
     collisions = main_colors.intersection(shadow_colors)
@@ -149,10 +172,38 @@ def validate_color_registry() -> None:
         if actual != expected or float(gradient.group(3)) != 4.0:
             raise ValidationError(f"Unexpected gradient definition for #{code}: {actual!r}")
 
+    for code, expected in ANIMATED_RANK_GRADIENTS.items():
+        if code not in entries:
+            raise ValidationError(f"Missing animated rank trigger #{code}")
+        match, trigger = entries[code]
+        if not match.group("shadow"):
+            raise ValidationError(f"Animated rank trigger #{code} must include its text shadow")
+        if any(part % 4 for part in trigger):
+            raise ValidationError(f"Animated rank trigger #{code} is not divisible by four")
+        gradient = DYNAMIC_GRADIENT_RE.search(match.group("body"))
+        if not gradient:
+            raise ValidationError(f"Animated rank trigger #{code} has no dynamic gradient")
+        actual = (rgb(gradient.group(1)), rgb(gradient.group(2)))
+        direction = float(gradient.group(3))
+        speed = float(gradient.group(4))
+        if actual != expected or direction != 2.0 or speed != 500.0:
+            raise ValidationError(
+                f"Unexpected animated gradient definition for #{code}: {actual!r}, {direction}, {speed}"
+            )
+
     readme = (ROOT / "README.md").read_text(encoding="utf-8").upper()
     missing = [f"#{code}" for code in entries if f"#{code}" not in readme]
     if missing:
         raise ValidationError(f"README is missing trigger codes: {', '.join(missing)}")
+    rank_codes = set(RANK_GRADIENTS) | set(ANIMATED_RANK_GRADIENTS)
+    missing_shadows = []
+    for code in rank_codes:
+        trigger = entries[code][1]
+        shadow_code = hex_color(tuple(part // 4 for part in trigger))
+        if f"#{shadow_code}" not in readme:
+            missing_shadows.append(f"#{shadow_code}")
+    if missing_shadows:
+        raise ValidationError(f"README is missing rank shadow codes: {', '.join(sorted(missing_shadows))}")
 
 
 def validate_zip(path: Path) -> None:
@@ -189,7 +240,7 @@ def main() -> int:
     validate_color_registry()
     if args.zip:
         validate_zip(args.zip.resolve())
-    print("OK: metadata, overlays, JSON, GLSL structure, 51 colors, shadows, docs"
+    print("OK: metadata, overlays, JSON, GLSL structure, 67 colors, shadows, docs"
           + (", and release ZIP" if args.zip else ""))
     return 0
 
