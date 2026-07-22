@@ -1,76 +1,143 @@
-# TheSalt's Text Effects
+# Text Effects — siberanka Gradient Edition
 
-Add dynamic text animations to your Minecraft world! This resource pack provides **customizable text effects**. Use with `/title`, `/tellraw`, and similar text components.
+Minecraft Java Edition metinlerine renk koduyla tetiklenen shader efektleri ekleyen, [TheSalt's Text Effects](https://github.com/TheSalts/Text_Effects) tabanlı kaynak paketi. Bu fork mevcut efektleri korur ve rütbe/etiket kullanımı için 16 koyudan açığa statik gradyan içerir.
 
-> This resource pack is **not compatible** with other packs that use the `rendertype_text` core shader.
+> [!IMPORTANT]
+> Paket `rendertype_text` çekirdek shader'ını değiştirir. Aynı shader'ı değiştiren başka bir kaynak paketiyle birlikte kullanılamaz; kaynak paketi listesinde üstte olan paket diğerini ezer.
 
 > [!WARNING]
-> Due to my mandatory military service, this project will receive minimal to no updates or maintenance until **December 2027**. Thank you for your understanding.
+> Mojang, kaynak paketlerinden çekirdek shader değiştirmeyi resmî olarak desteklenen bir genişletme noktası saymıyor. Bu fork sürüm kırılmalarını overlay'lerle yönetir; gelecekteki Minecraft sürümleri yeni bir overlay gerektirebilir.
 
-## How It Works
+## Nasıl çalışır?
 
-Define color-to-effect mappings in `_config.glsl`. When text uses a matching RGB color, the configured effect is applied.
+Minecraft metninde kullanılan tam RGB değeri `assets/minecraft/shaders/include/_config.glsl` içindeki bir tetikleyiciyle eşleştiğinde ilgili efekt uygulanır. Tetikleyici rengi ekranda görünmek zorunda değildir; efekt kendi görünür rengini veya gradyanını üretir.
 
-## Preview
+Sunucu, harita, `/tellraw`, `/title`, takım prefix'i, `text_display` ve eklenti örnekleri için [wiki.md](./wiki.md) dosyasına bakın. Efekt fonksiyonlarının ayrıntılı API açıklaması [CONFIGURATION.md](./CONFIGURATION.md) içindedir.
 
-![23](https://github.com/user-attachments/assets/1ed9fd46-a769-4256-bc36-758adc431602)
+## Sürüm uyumluluğu
 
-<img width="1228" height="668" alt="new1" src="https://github.com/user-attachments/assets/fd819652-8fa1-41ab-b177-50e09646ea2d" />
+Tek ZIP, Minecraft Java Edition kaynak paketi formatı 7–100 aralığını bildirir. Upstream'in çok sürümlü düzeni korunmuştur:
 
-<img width="1920" height="1009" alt="2026-03-08_22 50 06" src="https://github.com/user-attachments/assets/3c988bdb-a60d-4db7-ba49-a50a3ab8f918" />
+| Minecraft ailesi | Kaynak formatı | Kullanılan paket katmanı |
+| --- | ---: | --- |
+| 1.17.x–1.21.1 | 7–34 | Ana `assets/` ağacı |
+| 1.21.2–1.21.5 | 35–55 | Ana ağaç + `1_21_2` overlay |
+| 1.21.6–1.21.11 | 63–75 | Ana ağaç + `1_21_6` overlay |
+| 26.1–26.1.1 | 76–84 | Öncekiler + `26_1` overlay |
+| 26.2–26.x | 85–100 | Öncekiler + `26_2` overlay |
 
-<img width="1920" height="1009" alt="2026-03-08_22 49 24" src="https://github.com/user-attachments/assets/a4d76af1-aae6-4132-b3ac-4e39eb6344f9" />
+1.20.2 öncesi istemciler `supported_formats` alanını tanımadığı için paketi uyumsuz işaretleyebilir; bu, tek ZIP ile eski ve yeni metadata biçimlerini aynı anda taşımanın doğal sonucudur. Paket yine de “Evet” seçilerek yüklenir. Sunucu dağıtımında istemci paketi doğrudan uygular.
 
-## Can I use this on my map/server?
+## Rütbe gradyanları
 
-Yes. It is fully permitted for use in your maps, servers, resource packs, modpacks and more, provided that you follow the guidelines of the [License](https://github.com/TheSalts/Text_Effects/blob/main/LICENSE).
+Her gradyanda ilk renk koyu temel, ikinci renk daha açık tamamlayıcıdır. Yön yukarıdan aşağıya `4.0` olarak sabittir. Tetikleyiciler ve otomatik gölge renkleri birbirleriyle çakışmaması için dördün katlarından seçilmiştir.
 
-## Available Effects
+| Gradyan | Kullanılacak tetikleyici | Otomatik gölge | Görünen koyu → açık renk |
+| --- | --- | --- | --- |
+| Gri → Beyaz | `#F8F8DC` | `#3E3E37` | `#606060` → `#FFFFFF` |
+| Sarı → Açık sarı | `#F8F8E0` | `#3E3E38` | `#CC9C00` → `#FFF480` |
+| Turuncu → Açık turuncu | `#F8F8E4` | `#3E3E39` | `#B84800` → `#FFB45C` |
+| Mavi → Camgöbeği | `#F8F8E8` | `#3E3E3A` | `#1860B8` → `#40E0FF` |
+| Lacivert → Açık lacivert | `#F8F8EC` | `#3E3E3B` | `#0C2070` → `#4060C0` |
+| Kırmızı → Açık kırmızı | `#F8F8F0` | `#3E3E3C` | `#981818` → `#FF6868` |
+| Yeşil → Açık yeşil | `#F8F8F4` | `#3E3E3D` | `#147034` → `#60E084` |
+| Mor → Açık mor | `#F8F8F8` | `#3E3E3E` | `#501C80` → `#B070E8` |
+| Pembe → Açık pembe | `#F8F8FC` | `#3E3E3F` | `#983064` → `#FF90C4` |
+| Koyu gri → Gri | `#F8FCDC` | `#3E3F37` | `#242424` → `#808080` |
+| Siyah → Füme | `#F8FCE0` | `#3E3F38` | `#080808` → `#484848` |
+| Koyu yeşil → Yeşil | `#F8FCE4` | `#3E3F39` | `#084018` → `#34984C` |
+| Koyu turkuaz → Turkuaz | `#F8FCE8` | `#3E3F3A` | `#005854` → `#48C8C0` |
+| Camgöbeği → Açık camgöbeği | `#F8FCEC` | `#3E3F3B` | `#007088` → `#70ECF8` |
+| Eflatun → Açık eflatun | `#F8FCF0` | `#3E3F3C` | `#701868` → `#E870DC` |
+| Kahverengi → Açık kahverengi | `#F8FCF4` | `#3E3F3D` | `#5C3418` → `#BC7C4C` |
 
-| Effect                                                                                                                                                                   | Description               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| [`apply_shake(speed, intensity)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_shakefloat-speed-float-intensity)                            | Random shaking            |
-| [`apply_wavy(speed, amplitude, xFrequency)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_wavyfloat-speed-float-amplitude-float-xfrequency) | Wave animation            |
-| [`apply_rainbow(speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_rainbowfloat-speed)                                                   | Rainbow color cycle       |
-| [`apply_bouncy(speed, amplitude)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_bouncyfloat-speed-float-amplitude)                          | Bounce animation          |
-| [`apply_blinking(speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_blinkingfloat-speed)                                                 | Blink on/off              |
-| [`apply_pulse(speed, size)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_pulsefloat-speed-float-size)                                      | Grow/Shrink animation     |
-| [`apply_spin(speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_spinfloat-speed)                                                         | Rotation                  |
-| [`apply_sequential_spin(speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_sequential_spinfloat-speed)                                   | Sequential character spin |
-| [`apply_fade(speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_fadefloat-speed)                                                         | Fade in/out               |
-| [`apply_iterating(speed, space)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_iteratingfloat-speed-float-space)                            | Sequential jump           |
-| [`apply_glitch(speed, intensity)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_glitchfloat-speed-float-intensity)                          | Random displacement       |
-| [`apply_scale(scale, offsetX, offsetY)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_scalefloat-scale-float-offsetx-float-offsety)         | Scale text                |
-| [`apply_offset(offsetX, offsetY)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_offsetfloat-offsetx-float-offsety)                          | Move text position        |
-| [`apply_gradient(startColor, endColor, direction)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_gradient)                                  | Static linear gradient    |
-| [`apply_dynamic_gradient(start, end, dir, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_dynamic_gradient)                           | Animated moving gradient  |
-| [`apply_lava(speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_lavafloat-speed)                                                         | Flowing lava effect       |
-| [`apply_color(color)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_color)                                                                  | Override display color    |
-| [`apply_aurora(c1, c2, c3, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_aurora)                                                    | Flowing 3-color aurora    |
-| [`apply_split(intensity, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_split)                                                       | Animated horizontal split |
-| [`apply_outline(color, thickness)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_outline)                                                   | Glyph outline (fragment)  |
-| [`apply_hatch(color, speed, density)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_hatch)                                                  | Diagonal hatching (frag)  |
-| [`apply_neon(color, intensity, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_neon)                                                  | Neon glow (fragment)      |
-| [`apply_chromatic(intensity, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_chromatic)                                               | Chromatic aberration frag |
-| [`apply_extrude(depth, layers)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_extrude)                                                      | 3D depth shadow (frag)    |
-| [`apply_noise(intensity, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_noise)                                                       | Noise / static (fragment) |
-| [`apply_liquid(intensity, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_liquid)                                                     | Liquid morph (fragment)   |
-| [`apply_water(color, level, amp, speed)`](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md#apply_water)                                               | Wavy water-fill animation |
+Kısa örnek:
 
----
+```mcfunction
+tellraw @a {"text":"[ADMIN]","color":"#F8F8F0","bold":true}
+title @a title {"text":"VIP","color":"#F8F8E0","bold":true}
+```
 
-## Configuration
+## Kaynak paketteki tüm tetikleyici renk kodları
 
-See [CONFIGURATION.md](https://github.com/TheSalts/Text_Effects/blob/main/CONFIGURATION.md) for the configuration syntax, examples, and detailed function reference.
+Aşağıdaki liste `_config.glsl` içindeki 51 tetikleyicinin tamamıdır. “Gölge” sütunu efektin Minecraft'ın metin gölgesine de uygulandığını gösterir.
 
----
+| Kod | Efekt | Görünür renk/renkler | Gölge |
+| --- | --- | --- | :---: |
+| `#F8F854` | Shake | `#FF5050` | Evet |
+| `#F8F858` | Wavy | `#50FF50` | Evet |
+| `#F8F85C` | Rainbow | Dinamik gökkuşağı | Hayır |
+| `#F8F860` | Bouncy | `#FFAA00` | Evet |
+| `#F8F864` | Blinking | `#5050FF` | Evet |
+| `#F8F868` | Pulse | `#50FFFF` | Evet |
+| `#F8F86C` | Spin | `#FF50FF` | Evet |
+| `#F8F870` | Sequential Spin | `#FFFFFF` | Evet |
+| `#F8F874` | Fade | `#FFFF50` | Evet |
+| `#F8F878` | Iterating Jump | `#AA00FF` | Evet |
+| `#F8F87C` | Glitch | `#FF5050` | Evet |
+| `#F8F880` | Scale ×1.5 | `#50FFFF` | Evet |
+| `#F8F884` | Offset Up | `#FFAA00` | Evet |
+| `#F8F888` | Static Gradient | `#00C800` → `#FFFF00` | Hayır |
+| `#F8F88C` | Dynamic Gradient | `#FF0000` ↔ `#0000FF` | Hayır |
+| `#F8F890` | Dynamic Gradient | `#00C800` ↔ `#FFFF00` | Hayır |
+| `#F8F894` | Lava | `#FF1400` ↔ `#FFC800` | Hayır |
+| `#F8F898` | Wavy + Rainbow | Dinamik gökkuşağı | Hayır |
+| `#F8F89C` | Bouncy + Rainbow | Dinamik gökkuşağı | Hayır |
+| `#C86432` | Fast Shake | `#FFFF55` | Hayır |
+| `#FFC8C8` | Shadow Support / Wavy | Tetikleyici rengi | Evet |
+| `#F8F8A0` | Aurora | `#FF4DB3` ↔ `#4DFF99` ↔ `#6699FF` | Hayır |
+| `#F8F8A4` | Split | `#FF64C8` | Evet |
+| `#F8F8AC` | Outline | Gövde `#FFFFFF`, çizgi `#000000` | Hayır |
+| `#F8F8B0` | Hatch | Gövde `#A5E926`, tarama `#FFFFFF` | Hayır |
+| `#F8F8B4` | Neon | Işıma `#50DCFF` | Hayır |
+| `#F8F8B8` | RGBA Alpha | `#FF5050`, %50 alfa | Hayır |
+| `#F8F8BC` | Chromatic Aberration | Gövde `#FFFFFF`, RGB saçılması | Hayır |
+| `#F8F8C0` | 3D Extrude | Gövde `#FFC800`, otomatik koyulaşma | Hayır |
+| `#F8F8CC` | 3D Extrude 2-color | `#FFDC64` → `#502800` | Hayır |
+| `#F8F8D0` | 3D Extrude 3-color | `#CE47F0` → `#B4641E` → `#59C41C`; gövde `#FFF0B4` | Hayır |
+| `#F8F8C4` | Noise | `#FFFFFF` | Hayır |
+| `#F8F8C8` | Liquid Morph | `#50C8DC` | Hayır |
+| `#F8F8D4` | Water | Su `#2896F0`, kuru bölüm `#3C3C50` | Hayır |
+| `#F8F8D8` | Water 80% | Su `#00C8C8`, kuru bölüm `#283C3C` | Hayır |
+| `#F8F8DC` | Gri → Beyaz | `#606060` → `#FFFFFF` | Evet |
+| `#F8F8E0` | Sarı → Açık sarı | `#CC9C00` → `#FFF480` | Evet |
+| `#F8F8E4` | Turuncu → Açık turuncu | `#B84800` → `#FFB45C` | Evet |
+| `#F8F8E8` | Mavi → Camgöbeği | `#1860B8` → `#40E0FF` | Evet |
+| `#F8F8EC` | Lacivert → Açık lacivert | `#0C2070` → `#4060C0` | Evet |
+| `#F8F8F0` | Kırmızı → Açık kırmızı | `#981818` → `#FF6868` | Evet |
+| `#F8F8F4` | Yeşil → Açık yeşil | `#147034` → `#60E084` | Evet |
+| `#F8F8F8` | Mor → Açık mor | `#501C80` → `#B070E8` | Evet |
+| `#F8F8FC` | Pembe → Açık pembe | `#983064` → `#FF90C4` | Evet |
+| `#F8FCDC` | Koyu gri → Gri | `#242424` → `#808080` | Evet |
+| `#F8FCE0` | Siyah → Füme | `#080808` → `#484848` | Evet |
+| `#F8FCE4` | Koyu yeşil → Yeşil | `#084018` → `#34984C` | Evet |
+| `#F8FCE8` | Koyu turkuaz → Turkuaz | `#005854` → `#48C8C0` | Evet |
+| `#F8FCEC` | Camgöbeği → Açık camgöbeği | `#007088` → `#70ECF8` | Evet |
+| `#F8FCF0` | Eflatun → Açık eflatun | `#701868` → `#E870DC` | Evet |
+| `#F8FCF4` | Kahverengi → Açık kahverengi | `#5C3418` → `#BC7C4C` | Evet |
 
-## Special Thanks
+## Kullanılabilir efekt API'si
 
-좌우반전 코드를 제공해 주신 [@베스트견과류](https://github.com/bestnuts) 님에게 감사를 표합니다.
+Paket shake, wavy, rainbow, bouncy, blinking, pulse, spin, sequential spin, fade, iterating, glitch, scale/offset, static/dynamic gradient, lava, color override, aurora, split, outline, hatch, neon, chromatic aberration, 3D extrude, noise, liquid ve water efektlerini içerir. Parametreler ve birleştirme kuralları için [CONFIGURATION.md](./CONFIGURATION.md) dosyasını kullanın.
 
-## License
+## Doğrulama ve release ZIP'i
 
-This code is under MIT License
+```sh
+python scripts/validate_pack.py
+python scripts/build_release.py --output dist/Text-Effects-v1.2.0.zip
+python scripts/validate_pack.py --zip dist/Text-Effects-v1.2.0.zip
+```
 
-This project was originally inspired by [Text-Effects-by-Akis](https://github.com/YeahAkis/Text-Effects-by-Akis), with all shaders completely rewritten.
+Mojang'ın SHA-1 doğrulamalı resmî istemci JAR'larıyla shader ABI sınır kontrolü:
+
+```sh
+python scripts/verify_mojang_abi.py --include-snapshot
+```
+
+ZIP'in kökünde doğrudan `pack.mcmeta`, `pack.png`, `LICENSE`, `assets/` ve overlay klasörleri bulunur; fazladan üst klasör yoktur.
+
+## Kredi ve lisans
+
+Orijinal proje: [TheSalt's Text Effects](https://github.com/TheSalts/Text_Effects), Copyright © 2026 TheSalt_. Bu fork MIT Lisansı altında dağıtılır ve [LICENSE](./LICENSE) dosyası release paketinde korunur.
+
+Proje ilk olarak [Text-Effects-by-Akis](https://github.com/YeahAkis/Text-Effects-by-Akis) çalışmasından ilham almıştır. Orijinal projedeki özel teşekkür: 좌우반전 코드를 제공해 주신 [@베스트견과류](https://github.com/bestnuts) 님에게 감사를 표합니다.

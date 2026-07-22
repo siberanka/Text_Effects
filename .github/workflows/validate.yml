@@ -1,0 +1,23 @@
+name: Validate resource pack
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Validate source pack
+        run: python scripts/validate_pack.py
+      - name: Build deterministic Minecraft ZIP
+        run: python scripts/build_release.py --output dist/Text-Effects-v1.2.0.zip
+      - name: Validate release ZIP
+        run: python scripts/validate_pack.py --zip dist/Text-Effects-v1.2.0.zip

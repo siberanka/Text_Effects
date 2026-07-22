@@ -205,3 +205,90 @@ TEXT_EFFECT(rgb(248, 248, 216)) {
     apply_water(rgb(0, 200, 200), 0.8, 1.5, 1.2);
     apply_color(rgb(40, 60, 60));
 }
+
+// ============================================================
+// RANK GRADIENT PRESETS
+// ============================================================
+// Trigger colors intentionally use RGB components divisible by 4 so Minecraft's
+// automatic text shadows remain collision-free. Every preset starts with the
+// darker base color and fades downward (direction 4) to its lighter companion.
+
+// Gray -> White (#F8F8DC)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8DC)) {
+    apply_gradient(rgb(96, 96, 96), rgb(255, 255, 255), 4.0);
+}
+
+// Yellow -> Light Yellow (#F8F8E0)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8E0)) {
+    apply_gradient(rgb(204, 156, 0), rgb(255, 244, 128), 4.0);
+}
+
+// Orange -> Light Orange (#F8F8E4)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8E4)) {
+    apply_gradient(rgb(184, 72, 0), rgb(255, 180, 92), 4.0);
+}
+
+// Blue -> Cyan (#F8F8E8)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8E8)) {
+    apply_gradient(rgb(24, 96, 184), rgb(64, 224, 255), 4.0);
+}
+
+// Navy -> Light Navy (#F8F8EC)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8EC)) {
+    apply_gradient(rgb(12, 32, 112), rgb(64, 96, 192), 4.0);
+}
+
+// Red -> Light Red (#F8F8F0)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8F0)) {
+    apply_gradient(rgb(152, 24, 24), rgb(255, 104, 104), 4.0);
+}
+
+// Green -> Light Green (#F8F8F4)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8F4)) {
+    apply_gradient(rgb(20, 112, 52), rgb(96, 224, 132), 4.0);
+}
+
+// Purple -> Light Purple (#F8F8F8)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8F8)) {
+    apply_gradient(rgb(80, 28, 128), rgb(176, 112, 232), 4.0);
+}
+
+// Pink -> Light Pink (#F8F8FC)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8FC)) {
+    apply_gradient(rgb(152, 48, 100), rgb(255, 144, 196), 4.0);
+}
+
+// Dark Gray -> Gray (#F8FCDC)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCDC)) {
+    apply_gradient(rgb(36, 36, 36), rgb(128, 128, 128), 4.0);
+}
+
+// Black -> Charcoal (#F8FCE0)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCE0)) {
+    apply_gradient(rgb(8, 8, 8), rgb(72, 72, 72), 4.0);
+}
+
+// Dark Green -> Green (#F8FCE4)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCE4)) {
+    apply_gradient(rgb(8, 64, 24), rgb(52, 152, 76), 4.0);
+}
+
+// Dark Teal -> Teal (#F8FCE8)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCE8)) {
+    apply_gradient(rgb(0, 88, 84), rgb(72, 200, 192), 4.0);
+}
+
+// Cyan -> Light Cyan (#F8FCEC)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCEC)) {
+    apply_gradient(rgb(0, 112, 136), rgb(112, 236, 248), 4.0);
+}
+
+// Magenta -> Light Magenta (#F8FCF0)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCF0)) {
+    apply_gradient(rgb(112, 24, 104), rgb(232, 112, 220), 4.0);
+}
+
+// Brown -> Light Brown (#F8FCF4)
+TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCF4)) {
+    apply_gradient(rgb(92, 52, 24), rgb(188, 124, 76), 4.0);
+}

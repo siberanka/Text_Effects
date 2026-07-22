@@ -1,2 +1,5 @@
 default/
 .claude/
+dist/
+__pycache__/
+*.pyc

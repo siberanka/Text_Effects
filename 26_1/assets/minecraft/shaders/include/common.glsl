@@ -27,7 +27,15 @@ void applyProjection(inout vec4 vertex) {
     gl_Position = ProjMat * ModelViewMat * vertex;
 }
 
+vec4 sampleTextLightmap() {
+#if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+    return sample_lightmap(Sampler2, UV2);
+#else
+    return vec4(1.0);
+#endif
+}
+
 void applyColorTexture() {
-    vec4 texColor = sample_lightmap(Sampler2, UV2);
+    vec4 texColor = sampleTextLightmap();
     vertexColor = Color * texColor;
 }
