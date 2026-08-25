@@ -32,13 +32,13 @@ Akan varyantlarda koyu kaynak renk ile açık tamamlayıcı sürekli yer değiş
 ZIP'i doğrudan HTTPS indirme bağlantısı veren bir adreste barındırın. GitHub release bağlantısı:
 
 ```text
-https://github.com/siberanka/Text_Effects/releases/download/v1.3.0/Text-Effects-v1.3.0.zip
+https://gitlab.com/api/v4/projects/85741336/packages/generic/github-release-assets/v1.3.0/Text-Effects-v1.3.0.zip
 ```
 
 `server.properties` örneği:
 
 ```properties
-resource-pack=https://github.com/siberanka/Text_Effects/releases/download/v1.3.0/Text-Effects-v1.3.0.zip
+resource-pack=https://gitlab.com/api/v4/projects/85741336/packages/generic/github-release-assets/v1.3.0/Text-Effects-v1.3.0.zip
 resource-pack-sha1=ea93aa9970b76599600eb166423f70e35077bc9f
 require-resource-pack=true
 resource-pack-prompt={"text":"Rütbe gradyanlarını görebilmek için kaynak paketini kabul etmelisiniz.","color":"yellow"}
