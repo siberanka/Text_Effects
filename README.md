@@ -1,3 +1,9 @@
+<!-- DOWNLOAD_BADGES_START -->
+<p align="center">
+  <a href="https://gitlab.com/siberanka/Text_Effects/-/releases/permalink/latest/downloads/package.zip"><img alt="Download Resource Pack" src="https://img.shields.io/badge/Download-Resource%20Pack-8e44ad?logo=gitlab&logoColor=white"></a>
+</p>
+<!-- DOWNLOAD_BADGES_END -->
+
 # Text Effects — siberanka Gradient Edition
 
 Minecraft Java Edition metinlerine renk koduyla tetiklenen shader efektleri ekleyen, [TheSalt's Text Effects](https://github.com/TheSalts/Text_Effects) tabanlı kaynak paketi. Bu fork mevcut efektleri korur ve rütbe/etiket kullanımı için 16 statik, 16 sağdan sola akan koyu-açık gradyan içerir.
