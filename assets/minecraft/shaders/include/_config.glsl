@@ -215,82 +215,82 @@ TEXT_EFFECT(rgb(248, 248, 216)) {
 
 // Gray -> White (#F8F8DC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8DC)) {
-    apply_gradient(rgb(96, 96, 96), rgb(255, 255, 255), 4.0);
+    apply_rank_gradient(rgb(96, 96, 96), rgb(255, 255, 255), 4.0);
 }
 
 // Yellow -> Light Yellow (#F8F8E0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8E0)) {
-    apply_gradient(rgb(204, 156, 0), rgb(255, 244, 128), 4.0);
+    apply_rank_gradient(rgb(204, 156, 0), rgb(255, 244, 128), 4.0);
 }
 
 // Orange -> Light Orange (#F8F8E4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8E4)) {
-    apply_gradient(rgb(184, 72, 0), rgb(255, 180, 92), 4.0);
+    apply_rank_gradient(rgb(184, 72, 0), rgb(255, 180, 92), 4.0);
 }
 
 // Blue -> Cyan (#F8F8E8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8E8)) {
-    apply_gradient(rgb(24, 96, 184), rgb(64, 224, 255), 4.0);
+    apply_rank_gradient(rgb(24, 96, 184), rgb(64, 224, 255), 4.0);
 }
 
 // Navy -> Light Navy (#F8F8EC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8EC)) {
-    apply_gradient(rgb(12, 32, 112), rgb(64, 96, 192), 4.0);
+    apply_rank_gradient(rgb(12, 32, 112), rgb(64, 96, 192), 4.0);
 }
 
 // Red -> Light Red (#F8F8F0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8F0)) {
-    apply_gradient(rgb(152, 24, 24), rgb(255, 104, 104), 4.0);
+    apply_rank_gradient(rgb(152, 24, 24), rgb(255, 104, 104), 4.0);
 }
 
 // Green -> Light Green (#F8F8F4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8F4)) {
-    apply_gradient(rgb(20, 112, 52), rgb(96, 224, 132), 4.0);
+    apply_rank_gradient(rgb(20, 112, 52), rgb(96, 224, 132), 4.0);
 }
 
 // Purple -> Light Purple (#F8F8F8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8F8)) {
-    apply_gradient(rgb(80, 28, 128), rgb(176, 112, 232), 4.0);
+    apply_rank_gradient(rgb(80, 28, 128), rgb(176, 112, 232), 4.0);
 }
 
 // Pink -> Light Pink (#F8F8FC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8F8FC)) {
-    apply_gradient(rgb(152, 48, 100), rgb(255, 144, 196), 4.0);
+    apply_rank_gradient(rgb(152, 48, 100), rgb(255, 144, 196), 4.0);
 }
 
 // Dark Gray -> Gray (#F8FCDC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCDC)) {
-    apply_gradient(rgb(36, 36, 36), rgb(128, 128, 128), 4.0);
+    apply_rank_gradient(rgb(36, 36, 36), rgb(128, 128, 128), 4.0);
 }
 
 // Black -> Charcoal (#F8FCE0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCE0)) {
-    apply_gradient(rgb(8, 8, 8), rgb(72, 72, 72), 4.0);
+    apply_rank_gradient(rgb(8, 8, 8), rgb(72, 72, 72), 4.0);
 }
 
 // Dark Green -> Green (#F8FCE4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCE4)) {
-    apply_gradient(rgb(8, 64, 24), rgb(52, 152, 76), 4.0);
+    apply_rank_gradient(rgb(8, 64, 24), rgb(52, 152, 76), 4.0);
 }
 
 // Dark Teal -> Teal (#F8FCE8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCE8)) {
-    apply_gradient(rgb(0, 88, 84), rgb(72, 200, 192), 4.0);
+    apply_rank_gradient(rgb(0, 88, 84), rgb(72, 200, 192), 4.0);
 }
 
 // Cyan -> Light Cyan (#F8FCEC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCEC)) {
-    apply_gradient(rgb(0, 112, 136), rgb(112, 236, 248), 4.0);
+    apply_rank_gradient(rgb(0, 112, 136), rgb(112, 236, 248), 4.0);
 }
 
 // Magenta -> Light Magenta (#F8FCF0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCF0)) {
-    apply_gradient(rgb(112, 24, 104), rgb(232, 112, 220), 4.0);
+    apply_rank_gradient(rgb(112, 24, 104), rgb(232, 112, 220), 4.0);
 }
 
 // Brown -> Light Brown (#F8FCF4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCF4)) {
-    apply_gradient(rgb(92, 52, 24), rgb(188, 124, 76), 4.0);
+    apply_rank_gradient(rgb(92, 52, 24), rgb(188, 124, 76), 4.0);
 }
 
 // ============================================================
@@ -302,80 +302,80 @@ TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCF4)) {
 
 // Animated Gray -> White (#F8FCF8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCF8)) {
-    apply_dynamic_gradient(rgb(96, 96, 96), rgb(255, 255, 255), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(96, 96, 96), rgb(255, 255, 255), 2.0, 500.0);
 }
 
 // Animated Yellow -> Light Yellow (#F8FCFC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xF8FCFC)) {
-    apply_dynamic_gradient(rgb(204, 156, 0), rgb(255, 244, 128), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(204, 156, 0), rgb(255, 244, 128), 2.0, 500.0);
 }
 
 // Animated Orange -> Light Orange (#FCF8DC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8DC)) {
-    apply_dynamic_gradient(rgb(184, 72, 0), rgb(255, 180, 92), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(184, 72, 0), rgb(255, 180, 92), 2.0, 500.0);
 }
 
 // Animated Blue -> Cyan (#FCF8E0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8E0)) {
-    apply_dynamic_gradient(rgb(24, 96, 184), rgb(64, 224, 255), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(24, 96, 184), rgb(64, 224, 255), 2.0, 500.0);
 }
 
 // Animated Navy -> Light Navy (#FCF8E4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8E4)) {
-    apply_dynamic_gradient(rgb(12, 32, 112), rgb(64, 96, 192), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(12, 32, 112), rgb(64, 96, 192), 2.0, 500.0);
 }
 
 // Animated Red -> Light Red (#FCF8E8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8E8)) {
-    apply_dynamic_gradient(rgb(152, 24, 24), rgb(255, 104, 104), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(152, 24, 24), rgb(255, 104, 104), 2.0, 500.0);
 }
 
 // Animated Green -> Light Green (#FCF8EC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8EC)) {
-    apply_dynamic_gradient(rgb(20, 112, 52), rgb(96, 224, 132), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(20, 112, 52), rgb(96, 224, 132), 2.0, 500.0);
 }
 
 // Animated Purple -> Light Purple (#FCF8F0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8F0)) {
-    apply_dynamic_gradient(rgb(80, 28, 128), rgb(176, 112, 232), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(80, 28, 128), rgb(176, 112, 232), 2.0, 500.0);
 }
 
 // Animated Pink -> Light Pink (#FCF8F4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8F4)) {
-    apply_dynamic_gradient(rgb(152, 48, 100), rgb(255, 144, 196), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(152, 48, 100), rgb(255, 144, 196), 2.0, 500.0);
 }
 
 // Animated Dark Gray -> Gray (#FCF8F8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8F8)) {
-    apply_dynamic_gradient(rgb(36, 36, 36), rgb(128, 128, 128), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(36, 36, 36), rgb(128, 128, 128), 2.0, 500.0);
 }
 
 // Animated Black -> Charcoal (#FCF8FC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCF8FC)) {
-    apply_dynamic_gradient(rgb(8, 8, 8), rgb(72, 72, 72), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(8, 8, 8), rgb(72, 72, 72), 2.0, 500.0);
 }
 
 // Animated Dark Green -> Green (#FCFCDC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCFCDC)) {
-    apply_dynamic_gradient(rgb(8, 64, 24), rgb(52, 152, 76), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(8, 64, 24), rgb(52, 152, 76), 2.0, 500.0);
 }
 
 // Animated Dark Teal -> Teal (#FCFCE0)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCFCE0)) {
-    apply_dynamic_gradient(rgb(0, 88, 84), rgb(72, 200, 192), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(0, 88, 84), rgb(72, 200, 192), 2.0, 500.0);
 }
 
 // Animated Cyan -> Light Cyan (#FCFCE4)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCFCE4)) {
-    apply_dynamic_gradient(rgb(0, 112, 136), rgb(112, 236, 248), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(0, 112, 136), rgb(112, 236, 248), 2.0, 500.0);
 }
 
 // Animated Magenta -> Light Magenta (#FCFCE8)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCFCE8)) {
-    apply_dynamic_gradient(rgb(112, 24, 104), rgb(232, 112, 220), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(112, 24, 104), rgb(232, 112, 220), 2.0, 500.0);
 }
 
 // Animated Brown -> Light Brown (#FCFCEC)
 TEXT_EFFECT_WITH_SHADOW(rgb(0xFCFCEC)) {
-    apply_dynamic_gradient(rgb(92, 52, 24), rgb(188, 124, 76), 2.0, 500.0);
+    apply_rank_dynamic_gradient(rgb(92, 52, 24), rgb(188, 124, 76), 2.0, 500.0);
 }

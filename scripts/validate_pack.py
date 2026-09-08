@@ -18,11 +18,12 @@ ENTRY_RE = re.compile(
     r"\{(?P<body>.*?)\}",
     re.DOTALL | re.MULTILINE,
 )
-GRADIENT_RE = re.compile(
-    r"apply_gradient\(\s*rgb\(([^)]*)\)\s*,\s*rgb\(([^)]*)\)\s*,\s*([0-9.]+)\s*\)"
+RANK_GRADIENT_RE = re.compile(
+    r"apply_rank_gradient\(\s*rgb\(([^)]*)\)\s*,\s*rgb\(([^)]*)\)\s*,"
+    r"\s*([0-9.]+)\s*\)"
 )
-DYNAMIC_GRADIENT_RE = re.compile(
-    r"apply_dynamic_gradient\(\s*rgb\(([^)]*)\)\s*,\s*rgb\(([^)]*)\)\s*,"
+RANK_DYNAMIC_GRADIENT_RE = re.compile(
+    r"apply_rank_dynamic_gradient\(\s*rgb\(([^)]*)\)\s*,\s*rgb\(([^)]*)\)\s*,"
     r"\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\)"
 )
 
@@ -163,6 +164,62 @@ def validate_upstream_regressions() -> None:
         raise ValidationError("Minecraft 26.2 see-through fallback is missing")
 
 
+def validate_26_2_rank_stability() -> None:
+    shader = (ROOT / "26_2/assets/minecraft/shaders/include/apply_effect.glsl").read_text(
+        encoding="utf-8"
+    )
+    required = (
+        "rankGradientGlyphCorner()",
+        "fract(UV0 * 256.0)",
+        "rankGradientScreenPosition()",
+        "(gl_Position.xy / safeW) * ScreenSize * 0.5",
+        "if (flagRankGradient)",
+    )
+    missing = [snippet for snippet in required if snippet not in shader]
+    if missing:
+        raise ValidationError(f"Missing Minecraft 26.2 rank stabilization: {missing!r}")
+
+    # Mojang's 26.2 FontTexture insets the atlas edges by 0.01 texel. Unlike
+    # gl_VertexID, these coordinates are independent of StagedVertexBuffer's
+    # arbitrary draw base. Exercise all four corners against representative
+    # base offsets to make that invariance explicit.
+    atlas_corners = (
+        ((17.01 / 256.0, 31.01 / 256.0), (0, 0)),
+        ((17.01 / 256.0, 38.99 / 256.0), (0, 1)),
+        ((22.99 / 256.0, 38.99 / 256.0), (1, 1)),
+        ((22.99 / 256.0, 31.01 / 256.0), (1, 0)),
+    )
+    observed_legacy_mismatch = False
+    for draw_base in (0, 1, 37, 1026):
+        for local_vertex, (uv, expected) in enumerate(atlas_corners):
+            corner = tuple(int((component * 256.0) % 1.0 >= 0.5) for component in uv)
+            if corner != expected:
+                raise ValidationError(
+                    f"Unstable 26.2 atlas corner at base {draw_base}, vertex {local_vertex}"
+                )
+            legacy_vertex = (draw_base + local_vertex) % 4
+            legacy_corner = (
+                int(legacy_vertex in (2, 3)),
+                int(legacy_vertex in (1, 2)),
+            )
+            observed_legacy_mismatch |= legacy_corner != expected
+    if not observed_legacy_mismatch:
+        raise ValidationError("26.2 staged-buffer regression fixture is ineffective")
+
+    # GameTime advances by 1 / 1200 per second. At 60 FPS and speed 500 the
+    # phase must advance smoothly and remain independent of the staged draw base.
+    def animated_phase(game_time: float, screen_x: float) -> float:
+        value = (game_time * 500.0 + screen_x * 0.01) % 1.0
+        return 1.0 - abs(value * 2.0 - 1.0)
+
+    samples = [animated_phase(frame / (1200.0 * 60.0), 320.0) for frame in range(10)]
+    if any(abs(current - previous) > 0.015 for previous, current in zip(samples, samples[1:])):
+        raise ValidationError("Minecraft 26.2 rank animation phase is not frame-continuous")
+    stable_across_draws = [animated_phase(0.25, 320.0) for _ in (0, 1, 37, 1026)]
+    if len(set(stable_across_draws)) != 1:
+        raise ValidationError("Minecraft 26.2 rank animation depends on the staged draw base")
+
+
 def validate_color_registry() -> None:
     config = CONFIG.read_text(encoding="utf-8")
     entries: dict[str, tuple[re.Match[str], tuple[int, int, int]]] = {}
@@ -198,7 +255,7 @@ def validate_color_registry() -> None:
             raise ValidationError(f"Rank gradient #{code} must include its text shadow")
         if any(part % 4 for part in trigger):
             raise ValidationError(f"Rank gradient trigger #{code} is not divisible by four")
-        gradient = GRADIENT_RE.search(match.group("body"))
+        gradient = RANK_GRADIENT_RE.search(match.group("body"))
         if not gradient:
             raise ValidationError(f"Rank gradient #{code} has no static gradient")
         actual = (rgb(gradient.group(1)), rgb(gradient.group(2)))
@@ -213,7 +270,7 @@ def validate_color_registry() -> None:
             raise ValidationError(f"Animated rank trigger #{code} must include its text shadow")
         if any(part % 4 for part in trigger):
             raise ValidationError(f"Animated rank trigger #{code} is not divisible by four")
-        gradient = DYNAMIC_GRADIENT_RE.search(match.group("body"))
+        gradient = RANK_DYNAMIC_GRADIENT_RE.search(match.group("body"))
         if not gradient:
             raise ValidationError(f"Animated rank trigger #{code} has no dynamic gradient")
         actual = (rgb(gradient.group(1)), rgb(gradient.group(2)))
@@ -271,10 +328,12 @@ def main() -> int:
     validate_metadata()
     validate_json_and_glsl()
     validate_upstream_regressions()
+    validate_26_2_rank_stability()
     validate_color_registry()
     if args.zip:
         validate_zip(args.zip.resolve())
-    print("OK: metadata, overlays, JSON, GLSL structure, 67 colors, shadows, docs"
+    print("OK: metadata, overlays, JSON, GLSL structure, 67 colors, shadows, "
+          "26.2 rank stability, docs"
           + (", and release ZIP" if args.zip else ""))
     return 0
 

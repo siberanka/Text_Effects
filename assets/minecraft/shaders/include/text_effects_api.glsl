@@ -25,6 +25,7 @@ bool flagGlitch = false;
 bool flagScale = false;
 bool flagGradient = false;
 bool flagDynamicGradient = false;
+bool flagRankGradient = false;
 bool flagAurora = false;
 bool flagSplit = false;
 bool flagOutline = false;
@@ -373,6 +374,11 @@ void apply_gradient() {
     flagGradient = true;
 }
 
+void apply_rank_gradient(vec3 start, vec3 end, float direction) {
+    apply_gradient(start, end, direction);
+    flagRankGradient = true;
+}
+
 // --- Dynamic Gradient Effect ---
 void apply_dynamic_gradient(vec3 start, vec3 end, float direction, float speed) {
     flagDynamicGradient = true;
@@ -402,6 +408,11 @@ void apply_dynamic_gradient(vec3 start, vec3 end) {
 
 void apply_dynamic_gradient() {
     flagDynamicGradient = true;
+}
+
+void apply_rank_dynamic_gradient(vec3 start, vec3 end, float direction, float speed) {
+    apply_dynamic_gradient(start, end, direction, speed);
+    flagRankGradient = true;
 }
 
 void apply_lava(float speed) {

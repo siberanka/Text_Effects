@@ -1,4 +1,21 @@
 // Author: nattapat2871 (https://nattapat2871.me)
+
+// Minecraft 26.2 appends prepared text draws to a shared staged vertex buffer.
+// gl_VertexID therefore includes an arbitrary draw base and cannot identify a
+// glyph corner or character consistently. Font atlas UVs keep Mojang's 0.01
+// texel inset, so their fractional texel selects a stable corner. Screen-space
+// coordinates provide a continuous phase for animated hologram gradients.
+vec2 rankGradientGlyphCorner() {
+    return step(vec2(0.5), fract(UV0 * 256.0));
+}
+
+vec2 rankGradientScreenPosition() {
+    float safeW = abs(gl_Position.w) < 0.000001
+        ? (gl_Position.w < 0.0 ? -0.000001 : 0.000001)
+        : gl_Position.w;
+    return (gl_Position.xy / safeW) * ScreenSize * 0.5;
+}
+
 void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     vec4 displayColor = isShadow ? vec4(baseColor.rgb * 0.25, baseColor.a) : baseColor;
     bool suppressFragmentShadow = isShadow && (
@@ -266,13 +283,16 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         float s = isShadow ? 0.25 : 1.0;
         int dynDir = int(paramDynGradientDirection);
 
-        // GUI uses model-space position so the phase stays stable when other
-        // text in the same batch changes (e.g. tab list animations shifting
-        // gl_VertexID). World-space text (Text Display) falls back to vertex-id
-        // derived coords because Position can be too small to drive a gradient.
+        // Rank gradients use stable screen coordinates on 26.2 because staged
+        // draws give gl_VertexID an arbitrary base. Other built-in gradients
+        // retain their existing behavior.
         bool isGUI = ProjMat[3][3] != 0.0;
         float spatialX, spatialY;
-        if (isGUI) {
+        if (flagRankGradient) {
+            vec2 rankPosition = rankGradientScreenPosition();
+            spatialX = rankPosition.x;
+            spatialY = rankPosition.y;
+        } else if (isGUI) {
             spatialX = preX;
             spatialY = preY;
         } else {
@@ -300,9 +320,17 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         vertexColor = vec4(dynColor, dynAlpha * displayColor.a) * texColor;
     } else if (flagGradient) {
         float s = isShadow ? 0.25 : 1.0;
-        float vid = mod(float(gl_VertexID), 4.0);
-        float x_t = (vid == 2.0 || vid == 3.0) ? 1.0 : 0.0;
-        float y_t = (vid == 1.0 || vid == 2.0) ? 1.0 : 0.0;
+        float x_t;
+        float y_t;
+        if (flagRankGradient) {
+            vec2 rankCorner = rankGradientGlyphCorner();
+            x_t = rankCorner.x;
+            y_t = rankCorner.y;
+        } else {
+            float vid = mod(float(gl_VertexID), 4.0);
+            x_t = (vid == 2.0 || vid == 3.0) ? 1.0 : 0.0;
+            y_t = (vid == 1.0 || vid == 2.0) ? 1.0 : 0.0;
+        }
         int gradDir = int(paramGradientDirection);
         float gradT;
         if      (gradDir == 0) gradT = 1.0 - y_t;
