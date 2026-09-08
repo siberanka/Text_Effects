@@ -383,7 +383,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     // only needed for world-space text (Text Display) where z-fight is real.
     // ========================================
     if (ProjMat[3][3] == 0.0) {
-        gl_Position.z -= 0.001;
+        gl_Position.z -= gl_Position.w * 0.001;
     }
 
     // ========================================

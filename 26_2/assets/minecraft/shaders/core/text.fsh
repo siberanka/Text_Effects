@@ -52,6 +52,8 @@ out vec4 fragColor;
 
 void main() {
     vec2 uv = texCoord0;
+
+    // Apply spin effect
     applySpinEffect(uv, spinT0, spinT1, spinT2, spinT3, spinScale, spinFlip, texCoord0, Sampler0);
 
     int effectID = int(fshEffectID + 0.5);
@@ -88,7 +90,8 @@ void main() {
         return;
     } else if (effectID == 7) {
         applyExtrudeEffect(uv, fshBaseColor, fshEffectColor, fshExtrudeColor2, fshExtrudeColor3,
-                           fshEffectParams, fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
+                           fshEffectParams,
+                           fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
                            Sampler0, fragColor);
         fragColor.a *= fshDisplayAlpha;
         return;
@@ -124,6 +127,7 @@ void main() {
     vec4 color = texColor * vertexColor * ColorModulator;
 #endif
 
+    // Create TextData struct for effect processing
     TextData textData;
     textData.uv = uv;
     textData.spinT0 = spinT0;
@@ -146,4 +150,8 @@ void main() {
                           FogEnvironmentalStart, FogEnvironmentalEnd,
                           FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 #endif
+
+    if (vertexColor.rgb == vec3(1.0, 1.0, 1.0)) {
+        fragColor = color;
+    }
 }

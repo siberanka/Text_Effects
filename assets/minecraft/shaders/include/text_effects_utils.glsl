@@ -85,7 +85,7 @@ void applyTextEffects() {
     // 1.21.6+ uses tight z-steps for UI layering — a 0.001 nudge there flips
     // tooltip/autocomplete ordering relative to chat.
     if (ProjMat[3][3] == 0.0) {
-        gl_Position.z -= 0.001;
+        gl_Position.z -= gl_Position.w * 0.001;
     }
     applyColorTexture();
     finalize();

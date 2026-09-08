@@ -14,10 +14,10 @@ in vec4 Color;
 in vec2 UV0;
 #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
 in ivec2 UV2;
-uniform sampler2D Sampler2;
 #endif
 
 #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+uniform sampler2D Sampler2;
 out float sphericalVertexDistance;
 out float cylindricalVertexDistance;
 #endif
@@ -53,10 +53,8 @@ void main() {
 #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
     sphericalVertexDistance = fog_spherical_distance(Position);
     cylindricalVertexDistance = fog_cylindrical_distance(Position);
-    vertexColor = Color * sampleTextLightmap();
-#else
-    vertexColor = Color;
 #endif
+
     texCoord0 = UV0;
 
     spinT0 = vec3(0.0);
