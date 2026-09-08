@@ -98,8 +98,8 @@ def validate_metadata() -> None:
     expected_overlays = [
         ("1_21_2", 36, 56),
         ("1_21_6", 57, 100),
-        ("26_1", 76, 100),
-        ("26_2", 85, 100),
+        ("26_1", 76, 87),
+        ("26_2", 88, 100),
     ]
     entries = metadata.get("overlays", {}).get("entries", [])
     actual = [
@@ -128,6 +128,39 @@ def validate_json_and_glsl() -> None:
             stripped = re.sub(r"//.*?$|/\*.*?\*/", "", text, flags=re.MULTILINE | re.DOTALL)
             if stripped.count("{") != stripped.count("}"):
                 raise ValidationError(f"Unbalanced braces: {path.relative_to(ROOT)}")
+
+
+def validate_upstream_regressions() -> None:
+    api = (ROOT / "assets/minecraft/shaders/include/text_effects_api.glsl").read_text(
+        encoding="utf-8"
+    )
+    offset = re.search(
+        r"void\s+apply_offset\s*\([^)]*\)\s*\{(?P<body>.*?)\n\}", api, re.DOTALL
+    )
+    if offset is None:
+        raise ValidationError("Missing apply_offset implementation")
+    body = offset.group("body")
+    if "paramScaleFactor = 1.0;" not in body or "paramScaleFactor = 0.0;" in body:
+        raise ValidationError("apply_offset must preserve a 1.0 scale when scale is not active")
+
+    depth_biases = {
+        "assets/minecraft/shaders/include/apply_effect.glsl": "-= gl_Position.w * 0.001",
+        "assets/minecraft/shaders/include/text_effects_utils.glsl": "-= gl_Position.w * 0.001",
+        "1_21_2/assets/minecraft/shaders/include/text_effects_utils.glsl": "-= gl_Position.w * 0.001",
+        "1_21_6/assets/minecraft/shaders/include/text_effects_utils.glsl": "-= gl_Position.w * 0.001",
+        "26_1/assets/minecraft/shaders/include/apply_effect.glsl": "-= gl_Position.w * 0.001",
+        "26_2/assets/minecraft/shaders/include/apply_effect.glsl": "+= gl_Position.w * 0.001",
+    }
+    for relative, expected in depth_biases.items():
+        shader = (ROOT / relative).read_text(encoding="utf-8")
+        if expected not in shader:
+            raise ValidationError(f"Missing perspective-correct depth bias: {relative}")
+
+    text_26_2 = (ROOT / "26_2/assets/minecraft/shaders/core/text.fsh").read_text(
+        encoding="utf-8"
+    )
+    if "if (vertexColor.rgb == vec3(1.0, 1.0, 1.0))" not in text_26_2:
+        raise ValidationError("Minecraft 26.2 see-through fallback is missing")
 
 
 def validate_color_registry() -> None:
@@ -237,6 +270,7 @@ def main() -> int:
     args = parser.parse_args()
     validate_metadata()
     validate_json_and_glsl()
+    validate_upstream_regressions()
     validate_color_registry()
     if args.zip:
         validate_zip(args.zip.resolve())

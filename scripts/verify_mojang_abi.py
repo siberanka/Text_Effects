@@ -142,7 +142,7 @@ def verify_version(version: str, metadata_url: str, work: Path) -> tuple[int, st
         else:
             raise RuntimeError(f"{version}: unknown pack_version schema: {pack_versions!r}")
         checked = 0
-        shader_paths = COMBINED_TEXT_SHADERS if pack_format >= 85 else LEGACY_TEXT_SHADERS
+        shader_paths = COMBINED_TEXT_SHADERS if pack_format >= 88 else LEGACY_TEXT_SHADERS
         for path in shader_paths:
             source = resolve_pack(path, pack_format)
             if source is None:

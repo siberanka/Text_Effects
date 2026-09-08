@@ -30,7 +30,7 @@ Tek ZIP, Minecraft Java Edition kaynak paketi formatı 7–100 aralığını bil
 | 1.21.2–1.21.5 | 35–55 | Ana ağaç + `1_21_2` overlay |
 | 1.21.6–1.21.11 | 63–75 | Ana ağaç + `1_21_6` overlay |
 | 26.1–26.1.1 | 76–84 | Öncekiler + `26_1` overlay |
-| 26.2–26.x | 85–100 | Öncekiler + `26_2` overlay |
+| 26.2–26.x | 88–100 | Öncekiler + `26_2` overlay |
 
 1.20.2 öncesi istemciler `supported_formats` alanını tanımadığı için paketi uyumsuz işaretleyebilir; bu, tek ZIP ile eski ve yeni metadata biçimlerini aynı anda taşımanın doğal sonucudur. Paket yine de “Evet” seçilerek yüklenir. Sunucu dağıtımında istemci paketi doğrudan uygular.
 
@@ -170,8 +170,8 @@ Paket shake, wavy, rainbow, bouncy, blinking, pulse, spin, sequential spin, fade
 
 ```sh
 python scripts/validate_pack.py
-python scripts/build_release.py --output dist/Text-Effects-v1.3.0.zip
-python scripts/validate_pack.py --zip dist/Text-Effects-v1.3.0.zip
+python scripts/build_release.py --output dist/Text-Effects-v1.3.1.zip
+python scripts/validate_pack.py --zip dist/Text-Effects-v1.3.1.zip
 ```
 
 Mojang'ın SHA-1 doğrulamalı resmî istemci JAR'larıyla shader ABI sınır kontrolü:

@@ -333,7 +333,6 @@ void apply_offset(float offsetX, float offsetY) {
         paramScaleFactor = 1.0;
     }
     flagScale = true;
-    paramScaleFactor = 0.0;
     paramScaleOffsetX = offsetX;
     paramScaleOffsetY = offsetY;
 }
