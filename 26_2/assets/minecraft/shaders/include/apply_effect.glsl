@@ -417,14 +417,11 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     }
 
     // ========================================
-    // Phase 7: Depth bias to prevent z-fighting with background.
-    // Skip in GUI (orthographic) — 1.21.6+ uses tight z-steps for layered UI
-    // (tooltips, autocomplete), so a 0.001 nudge breaks layering. The bias is
-    // only needed for world-space text (Text Display) where z-fight is real.
+    // Phase 7: Keep 26.2 non-see-through hologram glyphs in front of their
+    // coplanar Text Display background. The same helper is used by the plain
+    // vanilla/Unicode path, preventing effect and glyph-type divergence.
     // ========================================
-    if (ProjMat[3][3] == 0.0) {
-        gl_Position.z += gl_Position.w * 0.001;
-    }
+    applyTextDisplayDepthBias();
 
     // ========================================
     // Phase 7b: Apply text display opacity (Color.a) uniformly.

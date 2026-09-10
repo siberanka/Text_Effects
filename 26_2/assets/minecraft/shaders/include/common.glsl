@@ -36,6 +36,16 @@ void applyProjection(inout vec4 vertex) {
     gl_Position = ProjMat * ModelViewMat * vertex;
 }
 
+// Minecraft 26.2 uses reversed depth for world text. Text displays render
+// their glyphs against a coplanar background, so move every non-see-through
+// glyph towards the camera by a constant 0.001 in normalized device depth.
+// Scaling by clip-space W keeps the bias distance-independent.
+void applyTextDisplayDepthBias() {
+#if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+    gl_Position.z += gl_Position.w * 0.001;
+#endif
+}
+
 void applyColorTexture() {
     vertexColor = Color * get_lightmap_color();
 }

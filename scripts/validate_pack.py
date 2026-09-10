@@ -150,7 +150,7 @@ def validate_upstream_regressions() -> None:
         "1_21_2/assets/minecraft/shaders/include/text_effects_utils.glsl": "-= gl_Position.w * 0.001",
         "1_21_6/assets/minecraft/shaders/include/text_effects_utils.glsl": "-= gl_Position.w * 0.001",
         "26_1/assets/minecraft/shaders/include/apply_effect.glsl": "-= gl_Position.w * 0.001",
-        "26_2/assets/minecraft/shaders/include/apply_effect.glsl": "+= gl_Position.w * 0.001",
+        "26_2/assets/minecraft/shaders/include/common.glsl": "+= gl_Position.w * 0.001",
     }
     for relative, expected in depth_biases.items():
         shader = (ROOT / relative).read_text(encoding="utf-8")
@@ -162,6 +162,66 @@ def validate_upstream_regressions() -> None:
     )
     if "if (vertexColor.rgb == vec3(1.0, 1.0, 1.0))" not in text_26_2:
         raise ValidationError("Minecraft 26.2 see-through fallback is missing")
+
+
+def validate_26_2_hologram_visibility() -> None:
+    common = (ROOT / "26_2/assets/minecraft/shaders/include/common.glsl").read_text(
+        encoding="utf-8"
+    )
+    effect = (ROOT / "26_2/assets/minecraft/shaders/include/apply_effect.glsl").read_text(
+        encoding="utf-8"
+    )
+    utility = (
+        ROOT / "26_2/assets/minecraft/shaders/include/text_effects_utils.glsl"
+    ).read_text(encoding="utf-8")
+    vertex = (ROOT / "26_2/assets/minecraft/shaders/core/text.vsh").read_text(
+        encoding="utf-8"
+    )
+    fragment = (ROOT / "26_2/assets/minecraft/shaders/core/text.fsh").read_text(
+        encoding="utf-8"
+    )
+
+    # 26.2's reversed-depth bias must be active only for the depth-tested world
+    # variant. Both color/bitmap glyphs and grayscale Unicode glyphs share this
+    # vertex path; IS_GRAYSCALE changes only the fragment texture sample.
+    expected_helper = re.compile(
+        r"void\s+applyTextDisplayDepthBias\s*\(\s*\)\s*\{\s*"
+        r"#if\s+!defined\(IS_GUI\)\s*&&\s*!defined\(IS_SEE_THROUGH\)\s*"
+        r"gl_Position\.z\s*\+=\s*gl_Position\.w\s*\*\s*0\.001\s*;\s*"
+        r"#endif\s*\}",
+        re.DOTALL,
+    )
+    if not expected_helper.search(common):
+        raise ValidationError("26.2 depth helper is not restricted to non-see-through world text")
+    if "#ifdef IS_GRAYSCALE" not in fragment or "texture(Sampler0, uv).rrrr" not in fragment:
+        raise ValidationError("26.2 Unicode/grayscale glyph path is missing")
+    if "#moj_import <minecraft:text_effects_utils.glsl>" not in vertex:
+        raise ValidationError("26.2 text vertex shader bypasses the shared visibility path")
+
+    # Every configured effect reaches applyEffect(); every ordinary vanilla hex
+    # color reaches the fallback below it. Require the same bias helper in both
+    # branches, with projection completed first in the plain-text branch.
+    if effect.count("applyTextDisplayDepthBias();") != 1:
+        raise ValidationError("26.2 configured effects do not have one shared depth-bias call")
+    if utility.count("applyTextDisplayDepthBias();") != 1:
+        raise ValidationError("26.2 vanilla text does not have one shared depth-bias call")
+    fallback = utility.split("if (hasAnyEffect())", 1)[-1]
+    projection_index = fallback.find("applyProjection(vertex);")
+    bias_index = fallback.find("applyTextDisplayDepthBias();")
+    color_index = fallback.find("applyColorTexture();")
+    if not (0 <= projection_index < bias_index < color_index):
+        raise ValidationError("26.2 vanilla text depth bias is ordered incorrectly")
+    if re.search(r"gl_Position\.z\s*[+-]=", effect):
+        raise ValidationError("26.2 effect path bypasses the shared depth helper")
+
+    # The clip-space operation must produce exactly +0.001 NDC depth regardless
+    # of camera distance. In 26.2's reversed depth this puts the glyph in front
+    # of a coplanar Text Display background instead of behind it.
+    for clip_w in (0.25, 1.0, 16.0, 256.0):
+        clip_z = 0.4 * clip_w
+        biased_ndc = (clip_z + clip_w * 0.001) / clip_w
+        if abs(biased_ndc - 0.401) > 1e-12:
+            raise ValidationError(f"26.2 depth bias varies with distance at W={clip_w}")
 
 
 def validate_26_2_rank_stability() -> None:
@@ -328,12 +388,13 @@ def main() -> int:
     validate_metadata()
     validate_json_and_glsl()
     validate_upstream_regressions()
+    validate_26_2_hologram_visibility()
     validate_26_2_rank_stability()
     validate_color_registry()
     if args.zip:
         validate_zip(args.zip.resolve())
     print("OK: metadata, overlays, JSON, GLSL structure, 67 colors, shadows, "
-          "26.2 rank stability, docs"
+          "26.2 hologram visibility/rank stability, docs"
           + (", and release ZIP" if args.zip else ""))
     return 0
 
