@@ -36,6 +36,55 @@ void applyProjection(inout vec4 vertex) {
     gl_Position = ProjMat * ModelViewMat * vertex;
 }
 
+// 26.2 appends text draws to a shared staged buffer, so gl_VertexID can start
+// at any offset. Mojang's glyph quads retain a 0.01-texel atlas inset; at the
+// fixed 256x256 glyph-sheet size its fractional texel identifies every corner
+// for both grayscale Unicode and bitmap/color glyphs.
+vec2 textEffectGlyphCorner() {
+    return step(vec2(0.5), fract(UV0 * 256.0));
+}
+
+vec2 textEffectCornerDirection() {
+    return textEffectGlyphCorner() * 2.0 - 1.0;
+}
+
+int textEffectLocalVertexIndex() {
+    vec2 corner = textEffectGlyphCorner();
+    if (corner.x < 0.5 && corner.y < 0.5) return 0;
+    if (corner.x < 0.5 && corner.y > 0.5) return 1;
+    if (corner.x > 0.5 && corner.y > 0.5) return 2;
+    return 3;
+}
+
+float textEffectCharacterIndex() {
+    // Removing the UV-derived local corner first prevents an unaligned staged
+    // draw base from assigning two character IDs to one quad.
+    return floor(float(gl_VertexID - textEffectLocalVertexIndex()) / 4.0);
+}
+
+vec2 textEffectScreenPosition() {
+    float safeW = abs(gl_Position.w) < 0.000001
+        ? (gl_Position.w < 0.0 ? -0.000001 : 0.000001)
+        : gl_Position.w;
+    return (gl_Position.xy / safeW) * ScreenSize * 0.5;
+}
+
+void captureTextEffectSpinCorners(vec2 uv) {
+    vec2 corner = textEffectGlyphCorner();
+    if (corner.x < 0.5 && corner.y < 0.5) spinT0 = vec3(uv, 1.0);
+    if (corner.x < 0.5 && corner.y > 0.5) spinT2 = vec3(uv, 1.0);
+    if (corner.x > 0.5 && corner.y > 0.5) spinT1 = vec3(uv, 1.0);
+    if (corner.x > 0.5 && corner.y < 0.5) spinT3 = vec3(uv, 1.0);
+}
+
+void captureTextEffectFragmentCorners(vec2 uv) {
+    vec2 corner = textEffectGlyphCorner();
+    if (corner.x < 0.5 && corner.y < 0.5) fshGlyphT0 = vec3(uv, 1.0);
+    if (corner.x < 0.5 && corner.y > 0.5) fshGlyphT2 = vec3(uv, 1.0);
+    if (corner.x > 0.5 && corner.y > 0.5) fshGlyphT1 = vec3(uv, 1.0);
+    if (corner.x > 0.5 && corner.y < 0.5) fshGlyphT3 = vec3(uv, 1.0);
+}
+
 // Minecraft 26.2 uses reversed depth for world text. Text displays render
 // their glyphs against a coplanar background, so move every non-see-through
 // glyph towards the camera by a constant 0.001 in normalized device depth.

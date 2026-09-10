@@ -6,14 +6,11 @@
 // texel inset, so their fractional texel selects a stable corner. Screen-space
 // coordinates provide a continuous phase for animated hologram gradients.
 vec2 rankGradientGlyphCorner() {
-    return step(vec2(0.5), fract(UV0 * 256.0));
+    return textEffectGlyphCorner();
 }
 
 vec2 rankGradientScreenPosition() {
-    float safeW = abs(gl_Position.w) < 0.000001
-        ? (gl_Position.w < 0.0 ? -0.000001 : 0.000001)
-        : gl_Position.w;
-    return (gl_Position.xy / safeW) * ScreenSize * 0.5;
+    return textEffectScreenPosition();
 }
 
 void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
@@ -46,7 +43,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     // Phase 2: Pre-projection vertex mods
     // ========================================
     if (flagShake) {
-        float charId = floor(float(gl_VertexID) / 4.0);
+        float charId = textEffectCharacterIndex();
         float shakeTime = GameTime * 32000.0 * paramShakeSpeed;
         float noiseX = noise(charId * 10.0 + shakeTime) - 0.5;
         float noiseY = noise(charId * 10.0 - shakeTime + 100.0) - 0.5;
@@ -55,9 +52,9 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     }
 
     if (flagBouncy) {
-        float vertexId = mod(float(gl_VertexID), 4.0);
+        vec2 glyphCorner = textEffectGlyphCorner();
         float bounceTime = GameTime * paramBounceSpeed;
-        if (vertexId == 3.0 || vertexId == 0.0) {
+        if (glyphCorner.y < 0.5) {
             setOffset(0.0, cos(bounceTime) * paramBounceAmplitude + max(cos(bounceTime) * paramBounceAmplitude, 0.0));
             applyOffset(vertex);
         }
@@ -67,12 +64,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         float pulseTime = GameTime * paramPulseSpeed * 1000.0;
         float pulseFactor = (sin(pulseTime) * 0.5 + 0.5);
         float expansion = paramPulseSize * 2.5 * pulseFactor;
-        float vertexId = mod(float(gl_VertexID), 4.0);
-        vec2 pulseDir = vec2(0.0);
-        if (vertexId < 0.5) pulseDir = vec2(-1.0, -1.0);
-        else if (vertexId < 1.5) pulseDir = vec2(-1.0, 1.0);
-        else if (vertexId < 2.5) pulseDir = vec2(1.0, 1.0);
-        else pulseDir = vec2(1.0, -1.0);
+        vec2 pulseDir = textEffectCornerDirection();
         pulseDir *= vec2(0.7, 1.0);
         vec2 pulseOffset = pulseDir * expansion;
         setOffset(pulseOffset.x, pulseOffset.y);
@@ -91,7 +83,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         // across bins, but the result is far less jarring than the jump.
         float charId = (ProjMat[3][3] != 0.0)
             ? floor(Position.x / 6.0)
-            : floor(float(gl_VertexID) / 4.0);
+            : textEffectCharacterIndex();
         float iterTime = GameTime * 18000.0 * iterSpeed;
         float iterX = mod(charId * 0.4 - iterTime, (5.0 * iterSpace) * TAU);
         if (iterX > TAU) iterX = TAU;
@@ -106,7 +98,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         if (gSpeed <= 0.0) gSpeed = 1.0;
         if (gIntensity <= 0.0) gIntensity = 2.0;
         float glitchTime = floor(GameTime * 32000.0 * gSpeed);
-        float glitchCharId = floor(float(gl_VertexID) / 4.0);
+        float glitchCharId = textEffectCharacterIndex();
         float glitchTrigger = random(vec2(glitchTime * 0.1, 0.0));
         float glitchOffX = 0.0;
         float glitchOffY = 0.0;
@@ -121,12 +113,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     }
 
     if (flagScale) {
-        float scaleVid = mod(float(gl_VertexID), 4.0);
-        vec2 scaleDir;
-        if      (scaleVid < 0.5) scaleDir = vec2(-1.0, -1.0);
-        else if (scaleVid < 1.5) scaleDir = vec2(-1.0,  1.0);
-        else if (scaleVid < 2.5) scaleDir = vec2( 1.0,  1.0);
-        else                     scaleDir = vec2( 1.0, -1.0);
+        vec2 scaleDir = textEffectCornerDirection();
         float actualExpansion = (paramScaleFactor - 1.0) * 4.0;
         scaleDir *= vec2(0.7, 1.0);
         vec2 scaleOffset = scaleDir * actualExpansion + vec2(paramScaleOffsetX, paramScaleOffsetY);
@@ -135,12 +122,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     }
 
     if (flagOutline) {
-        float vid = mod(float(gl_VertexID), 4.0);
-        vec2 outDir;
-        if      (vid < 0.5) outDir = vec2(-1.0, -1.0);
-        else if (vid < 1.5) outDir = vec2(-1.0,  1.0);
-        else if (vid < 2.5) outDir = vec2( 1.0,  1.0);
-        else                outDir = vec2( 1.0, -1.0);
+        vec2 outDir = textEffectCornerDirection();
         float pad = paramOutlineThickness + 1.0;
         setOffset(outDir.x * pad, outDir.y * pad);
         applyOffset(vertex);
@@ -154,8 +136,8 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         // outwards so the fragment shader has rendering area to draw the
         // shifted top half at full size.  UV at these vertices is unchanged,
         // and the fragment shader rescales sampling to compensate.
-        float fracVid = mod(float(gl_VertexID), 4.0);
-        if (fracVid == 0.0 || fracVid == 1.0) {
+        vec2 glyphCorner = textEffectGlyphCorner();
+        if (glyphCorner.x < 0.5) {
             setOffset(-paramSplitIntensity * 1.6, 0.0);
             applyOffset(vertex);
         }
@@ -164,8 +146,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     if (flagChromatic) {
         // Expand left vertices left and right vertices right by intensity*1.5 px
         // so the fragment has room for the red/blue fringe outside the original quad.
-        float vid = mod(float(gl_VertexID), 4.0);
-        float dx = (vid == 0.0 || vid == 1.0) ? -1.0 : 1.0;
+        float dx = textEffectCornerDirection().x;
         float pad = paramChromaticIntensity * 1.5;
         setOffset(dx * pad, 0.0);
         applyOffset(vertex);
@@ -174,9 +155,9 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
 
     if (flagExtrude) {
         // Expand right/bottom vertices to cover the extruded shadow area (down-right).
-        float vid = mod(float(gl_VertexID), 4.0);
-        bool isRight  = (vid == 2.0 || vid == 3.0);
-        bool isBottom = (vid == 1.0 || vid == 2.0);
+        vec2 glyphCorner = textEffectGlyphCorner();
+        bool isRight  = glyphCorner.x > 0.5;
+        bool isBottom = glyphCorner.y > 0.5;
         float pad = paramExtrudeDepth * paramExtrudeLayers + 1.0;
         setOffset(isRight ? pad : 0.0, isBottom ? pad : 0.0);
         applyOffset(vertex);
@@ -185,12 +166,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
 
     if (flagNoise) {
         // Expand all four corners outward by intensity+1 px for full displaced sampling area.
-        float vid = mod(float(gl_VertexID), 4.0);
-        vec2 outDir;
-        if      (vid < 0.5) outDir = vec2(-1.0, -1.0);
-        else if (vid < 1.5) outDir = vec2(-1.0,  1.0);
-        else if (vid < 2.5) outDir = vec2( 1.0,  1.0);
-        else                outDir = vec2( 1.0, -1.0);
+        vec2 outDir = textEffectCornerDirection();
         float pad = paramNoiseIntensity + 1.0;
         setOffset(outDir.x * pad, outDir.y * pad);
         applyOffset(vertex);
@@ -199,12 +175,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
 
     if (flagLiquid) {
         // Expand all four corners outward by intensity+1 px for full displaced sampling area.
-        float vid = mod(float(gl_VertexID), 4.0);
-        vec2 outDir;
-        if      (vid < 0.5) outDir = vec2(-1.0, -1.0);
-        else if (vid < 1.5) outDir = vec2(-1.0,  1.0);
-        else if (vid < 2.5) outDir = vec2( 1.0,  1.0);
-        else                outDir = vec2( 1.0, -1.0);
+        vec2 outDir = textEffectCornerDirection();
         float pad = paramLiquidIntensity + 1.0;
         setOffset(outDir.x * pad, outDir.y * pad);
         applyOffset(vertex);
@@ -234,10 +205,8 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         if (isGUI) {
             gl_Position.y += sin(GameTime * paramWaveSpeed + (Position.x * paramWaveXFrequency)) * (paramWaveAmplitude / 150.0);
         } else {
-            float charId = floor(float(gl_VertexID) / 4.0);
-            float vid = mod(float(gl_VertexID), 4.0);
-            float charX = charId + step(1.5, vid);
-            float wave = sin(GameTime * paramWaveSpeed + charX * paramWaveXFrequency * 6.0) * paramWaveAmplitude * 0.05;
+            float screenX = textEffectScreenPosition().x;
+            float wave = sin(GameTime * paramWaveSpeed + screenX * paramWaveXFrequency) * paramWaveAmplitude * 0.05;
             gl_Position.y += ProjMat[1][1] * wave;
         }
     }
@@ -252,11 +221,8 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         if (isGUI) {
             spatialAurora = preX + preY;
         } else {
-            float aCharId = floor(float(gl_VertexID) / 4.0);
-            float aVid    = mod(float(gl_VertexID), 4.0);
-            float aXt = (aVid == 2.0 || aVid == 3.0) ? 1.0 : 0.0;
-            float aYt = (aVid == 1.0 || aVid == 2.0) ? 1.0 : 0.0;
-            spatialAurora = (aCharId + aXt) * 6.0 + aYt * 7.0;
+            vec2 screenPosition = textEffectScreenPosition();
+            spatialAurora = screenPosition.x + screenPosition.y;
         }
         float auroraT = fract(GameTime * paramAuroraSpeed + spatialAurora * 0.01);
         float third = 1.0 / 3.0;
@@ -283,25 +249,17 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         float s = isShadow ? 0.25 : 1.0;
         int dynDir = int(paramDynGradientDirection);
 
-        // Rank gradients use stable screen coordinates on 26.2 because staged
-        // draws give gl_VertexID an arbitrary base. Other built-in gradients
-        // retain their existing behavior.
+        // All world gradients use stable screen coordinates on 26.2 because
+        // staged draws give gl_VertexID an arbitrary base.
         bool isGUI = ProjMat[3][3] != 0.0;
         float spatialX, spatialY;
-        if (flagRankGradient) {
+        if (!isGUI) {
             vec2 rankPosition = rankGradientScreenPosition();
             spatialX = rankPosition.x;
             spatialY = rankPosition.y;
-        } else if (isGUI) {
+        } else {
             spatialX = preX;
             spatialY = preY;
-        } else {
-            float dynCharId = floor(float(gl_VertexID) / 4.0);
-            float dynVid = mod(float(gl_VertexID), 4.0);
-            float dynXt = (dynVid == 2.0 || dynVid == 3.0) ? 1.0 : 0.0;
-            float dynYt = (dynVid == 1.0 || dynVid == 2.0) ? 1.0 : 0.0;
-            spatialX = (dynCharId + dynXt) * 6.0;
-            spatialY = dynYt * 7.0;
         }
 
         float spatial;
@@ -320,17 +278,9 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
         vertexColor = vec4(dynColor, dynAlpha * displayColor.a) * texColor;
     } else if (flagGradient) {
         float s = isShadow ? 0.25 : 1.0;
-        float x_t;
-        float y_t;
-        if (flagRankGradient) {
-            vec2 rankCorner = rankGradientGlyphCorner();
-            x_t = rankCorner.x;
-            y_t = rankCorner.y;
-        } else {
-            float vid = mod(float(gl_VertexID), 4.0);
-            x_t = (vid == 2.0 || vid == 3.0) ? 1.0 : 0.0;
-            y_t = (vid == 1.0 || vid == 2.0) ? 1.0 : 0.0;
-        }
+        vec2 gradientCorner = rankGradientGlyphCorner();
+        float x_t = gradientCorner.x;
+        float y_t = gradientCorner.y;
         int gradDir = int(paramGradientDirection);
         float gradT;
         if      (gradDir == 0) gradT = 1.0 - y_t;
@@ -400,11 +350,7 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     fshGlyphT3 = vec3(0.0);
     if (flagOutline || flagNeon || flagHatch || flagSplit ||
         flagChromatic || flagExtrude || flagNoise || flagLiquid || flagWater) {
-        int vid_glyph = gl_VertexID % 4;
-        if (vid_glyph == 0) fshGlyphT0 = vec3(UV0, 1.0);
-        if (vid_glyph == 1) fshGlyphT2 = vec3(UV0, 1.0);
-        if (vid_glyph == 2) fshGlyphT1 = vec3(UV0, 1.0);
-        if (vid_glyph == 3) fshGlyphT3 = vec3(UV0, 1.0);
+        captureTextEffectFragmentCorners(UV0);
     }
 
     // ========================================

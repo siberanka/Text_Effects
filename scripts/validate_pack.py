@@ -228,16 +228,63 @@ def validate_26_2_rank_stability() -> None:
     shader = (ROOT / "26_2/assets/minecraft/shaders/include/apply_effect.glsl").read_text(
         encoding="utf-8"
     )
+    common = (ROOT / "26_2/assets/minecraft/shaders/include/common.glsl").read_text(
+        encoding="utf-8"
+    )
     required = (
         "rankGradientGlyphCorner()",
-        "fract(UV0 * 256.0)",
         "rankGradientScreenPosition()",
-        "(gl_Position.xy / safeW) * ScreenSize * 0.5",
-        "if (flagRankGradient)",
     )
     missing = [snippet for snippet in required if snippet not in shader]
     if missing:
         raise ValidationError(f"Missing Minecraft 26.2 rank stabilization: {missing!r}")
+    common_required = (
+        "fract(UV0 * 256.0)",
+        "(gl_Position.xy / safeW) * ScreenSize * 0.5",
+        "textEffectLocalVertexIndex()",
+        "gl_VertexID - textEffectLocalVertexIndex()",
+        "captureTextEffectSpinCorners",
+        "captureTextEffectFragmentCorners",
+    )
+    missing = [snippet for snippet in common_required if snippet not in common]
+    if missing:
+        raise ValidationError(f"Missing Minecraft 26.2 staged-buffer helpers: {missing!r}")
+    corner_assignments = (
+        "corner.x < 0.5 && corner.y < 0.5) spinT0",
+        "corner.x < 0.5 && corner.y > 0.5) spinT2",
+        "corner.x > 0.5 && corner.y > 0.5) spinT1",
+        "corner.x > 0.5 && corner.y < 0.5) spinT3",
+        "corner.x < 0.5 && corner.y < 0.5) fshGlyphT0",
+        "corner.x < 0.5 && corner.y > 0.5) fshGlyphT2",
+        "corner.x > 0.5 && corner.y > 0.5) fshGlyphT1",
+        "corner.x > 0.5 && corner.y < 0.5) fshGlyphT3",
+    )
+    missing = [snippet for snippet in corner_assignments if snippet not in common]
+    if missing:
+        raise ValidationError(f"Incorrect 26.2 glyph-corner capture mapping: {missing!r}")
+
+    # Runtime 26.2 effect files must never derive a corner directly from the
+    # staged buffer's absolute vertex ID. The one remaining use lives in the
+    # common helper and subtracts the UV-derived local vertex first.
+    for relative in (
+        "26_2/assets/minecraft/shaders/include/apply_effect.glsl",
+        "26_2/assets/minecraft/shaders/include/spin.glsl",
+        "26_2/assets/minecraft/shaders/include/rainbow.glsl",
+        "26_2/assets/minecraft/shaders/include/gradient.glsl",
+    ):
+        source = (ROOT / relative).read_text(encoding="utf-8")
+        stripped = re.sub(r"//.*?$|/\*.*?\*/", "", source, flags=re.MULTILINE | re.DOTALL)
+        if "gl_VertexID" in stripped:
+            raise ValidationError(f"Unstable direct vertex ID remains in {relative}")
+    geometry_helpers = (
+        "textEffectCornerDirection()",
+        "textEffectGlyphCorner()",
+        "textEffectCharacterIndex()",
+        "captureTextEffectFragmentCorners(UV0)",
+    )
+    missing = [snippet for snippet in geometry_helpers if snippet not in shader]
+    if missing:
+        raise ValidationError(f"26.2 effects bypass stable glyph geometry: {missing!r}")
 
     # Mojang's 26.2 FontTexture insets the atlas edges by 0.01 texel. Unlike
     # gl_VertexID, these coordinates are independent of StagedVertexBuffer's
@@ -251,18 +298,26 @@ def validate_26_2_rank_stability() -> None:
     )
     observed_legacy_mismatch = False
     for draw_base in (0, 1, 37, 1026):
-        for local_vertex, (uv, expected) in enumerate(atlas_corners):
-            corner = tuple(int((component * 256.0) % 1.0 >= 0.5) for component in uv)
-            if corner != expected:
-                raise ValidationError(
-                    f"Unstable 26.2 atlas corner at base {draw_base}, vertex {local_vertex}"
+        for glyph_index in (0, 1, 9):
+            corrected_character_ids: set[int] = set()
+            for local_vertex, (uv, expected) in enumerate(atlas_corners):
+                corner = tuple(int((component * 256.0) % 1.0 >= 0.5) for component in uv)
+                if corner != expected:
+                    raise ValidationError(
+                        f"Unstable 26.2 atlas corner at base {draw_base}, vertex {local_vertex}"
+                    )
+                vertex_id = draw_base + glyph_index * 4 + local_vertex
+                legacy_vertex = vertex_id % 4
+                legacy_corner = (
+                    int(legacy_vertex in (2, 3)),
+                    int(legacy_vertex in (1, 2)),
                 )
-            legacy_vertex = (draw_base + local_vertex) % 4
-            legacy_corner = (
-                int(legacy_vertex in (2, 3)),
-                int(legacy_vertex in (1, 2)),
-            )
-            observed_legacy_mismatch |= legacy_corner != expected
+                observed_legacy_mismatch |= legacy_corner != expected
+                corrected_character_ids.add((vertex_id - local_vertex) // 4)
+            if len(corrected_character_ids) != 1:
+                raise ValidationError(
+                    f"26.2 character ID splits glyph {glyph_index} at base {draw_base}"
+                )
     if not observed_legacy_mismatch:
         raise ValidationError("26.2 staged-buffer regression fixture is ineffective")
 
@@ -394,7 +449,7 @@ def main() -> int:
     if args.zip:
         validate_zip(args.zip.resolve())
     print("OK: metadata, overlays, JSON, GLSL structure, 67 colors, shadows, "
-          "26.2 hologram visibility/rank stability, docs"
+          "26.2 hologram visibility/effect stability, docs"
           + (", and release ZIP" if args.zip else ""))
     return 0
 

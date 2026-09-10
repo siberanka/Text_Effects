@@ -1,9 +1,9 @@
 // 0=↑  1=↗  2=→  3=↘  4=↓  5=↙  6=←  7=↖
 // Author: nattapat2871 (https://nattapat2871.me)
 void processGradientEffect(inout vec4 vertex, vec3 startColor, vec3 endColor, float direction) {
-    float vid = mod(float(gl_VertexID), 4.0);
-    float x_t = (vid == 2.0 || vid == 3.0) ? 1.0 : 0.0;
-    float y_t = (vid == 1.0 || vid == 2.0) ? 1.0 : 0.0;
+    vec2 glyphCorner = textEffectGlyphCorner();
+    float x_t = glyphCorner.x;
+    float y_t = glyphCorner.y;
 
     int dir = int(direction);
     float t;

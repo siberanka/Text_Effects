@@ -4,18 +4,15 @@ void applyHueColor(float speed, float xPos, float yPos, float alpha) {
 
     vec4 texColor = get_lightmap_color();
 
-    // See apply_effect.glsl flagDynamicGradient: model-space in GUI keeps the
-    // phase stable across batch reorderings; vertex-id fallback for world text.
+    // Model-space keeps GUI text stable; screen-space keeps 26.2 staged world
+    // draws independent of their arbitrary gl_VertexID base.
     bool isGUI = ProjMat[3][3] != 0.0;
     float spatial;
     if (isGUI) {
         spatial = xPos + yPos;
     } else {
-        float charId = floor(float(gl_VertexID) / 4.0);
-        float vid = mod(float(gl_VertexID), 4.0);
-        float x_t = (vid == 2.0 || vid == 3.0) ? 1.0 : 0.0;
-        float y_t = (vid == 1.0 || vid == 2.0) ? 1.0 : 0.0;
-        spatial = (charId + x_t) * 6.0 + y_t * 7.0;
+        vec2 screenPosition = textEffectScreenPosition();
+        spatial = screenPosition.x + screenPosition.y;
     }
 
     vec3 rainbowColor = hue((GameTime * speed) + spatial * 0.01);
