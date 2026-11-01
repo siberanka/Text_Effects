@@ -1,3 +1,6 @@
+#ifndef TEXT_EFFECTS_26_2_APPLY_EFFECT_GLSL
+#define TEXT_EFFECTS_26_2_APPLY_EFFECT_GLSL
+
 // Author: nattapat2871 (https://nattapat2871.me)
 
 // Minecraft 26.2 appends prepared text draws to a shared staged vertex buffer.
@@ -381,3 +384,5 @@ void applyEffect(inout vec4 vertex, vec4 baseColor, bool isShadow) {
     // ========================================
     finalize();
 }
+
+#endif // TEXT_EFFECTS_26_2_APPLY_EFFECT_GLSL

@@ -1,3 +1,6 @@
+#ifndef TEXT_EFFECTS_26_2_COMMON_GLSL
+#define TEXT_EFFECTS_26_2_COMMON_GLSL
+
 // Author: nattapat2871 (https://nattapat2871.me)
 #define PI 3.14159265359
 #define TAU 6.28318530718
@@ -29,7 +32,8 @@ vec4 get_lightmap_color() {
 }
 
 void finalize() {
-    vertexColor *= ColorModulator;
+    // ColorModulator is applied once, in the fragment shader.
+
 }
 
 void applyProjection(inout vec4 vertex) {
@@ -98,3 +102,5 @@ void applyTextDisplayDepthBias() {
 void applyColorTexture() {
     vertexColor = Color * get_lightmap_color();
 }
+
+#endif // TEXT_EFFECTS_26_2_COMMON_GLSL

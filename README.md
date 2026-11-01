@@ -22,7 +22,7 @@ Sunucu, harita, `/tellraw`, `/title`, takım prefix'i, `text_display` ve eklenti
 
 ## Sürüm uyumluluğu
 
-Tek ZIP, Minecraft Java Edition kaynak paketi formatı 7–100 aralığını bildirir. Upstream'in çok sürümlü düzeni korunmuştur:
+Tek ZIP, Minecraft Java Edition kaynak paketi formatı 7–97.1 aralığını bildirir. Upstream'in çok sürümlü düzeni korunmuştur; test edilmemiş sonraki formatlar destek kapsamında değildir:
 
 | Minecraft ailesi | Kaynak formatı | Kullanılan paket katmanı |
 | --- | ---: | --- |
@@ -30,7 +30,8 @@ Tek ZIP, Minecraft Java Edition kaynak paketi formatı 7–100 aralığını bil
 | 1.21.2–1.21.5 | 35–55 | Ana ağaç + `1_21_2` overlay |
 | 1.21.6–1.21.11 | 63–75 | Ana ağaç + `1_21_6` overlay |
 | 26.1–26.1.1 | 76–84 | Öncekiler + `26_1` overlay |
-| 26.2–26.x | 88–100 | Öncekiler + `26_2` overlay |
+| 26.2 | 88–96 | Öncekiler + `26_2` overlay |
+| 26.3 | 97.1 | Öncekiler + `26_3` overlay |
 
 1.20.2 öncesi istemciler `supported_formats` alanını tanımadığı için paketi uyumsuz işaretleyebilir; bu, tek ZIP ile eski ve yeni metadata biçimlerini aynı anda taşımanın doğal sonucudur. Paket yine de “Evet” seçilerek yüklenir. Sunucu dağıtımında istemci paketi doğrudan uygular.
 
@@ -179,6 +180,19 @@ Mojang'ın SHA-1 doğrulamalı resmî istemci JAR'larıyla shader ABI sınır ko
 ```sh
 python scripts/verify_mojang_abi.py --include-snapshot
 ```
+
+26.2 ve 26.3 shader varyantları ayrıca resmî istemci JAR'ı ve Khronos `glslang`
+ile derlenip bağlanabilir. `verify_26_2_compile.py`, normal, GUI, grayscale,
+see-through ve 26.3 OIT geçişlerini kapsar; istemci JAR'ının beklenen SHA-1
+değerini zorunlu olarak doğrular.
+
+ItemsAdder 5 ile kullanılacak dağıtımda release ZIP'i tercih edilmelidir. Build
+aracı bakım yapılabilir kaynakları değiştirmeden ZIP içindeki shader yorumlarını
+ve gereksiz boşlukları güvenli biçimde küçültür. Paket yalnız metin core
+shader'larını içerir; ItemsAdder'ın eşya, zırh, entity veya terrain shader'larını
+ezmez. `iazip` komutunun ZIP üretmesi, native GLSL doğrulamasının geçtiği
+anlamına gelmez; sunucu günlüğündeki shader doğrulama sonucu ayrıca kontrol
+edilmelidir.
 
 ZIP'in kökünde doğrudan `pack.mcmeta`, `pack.png`, `LICENSE`, `assets/` ve overlay klasörleri bulunur; fazladan üst klasör yoktur.
 

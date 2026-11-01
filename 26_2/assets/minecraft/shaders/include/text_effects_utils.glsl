@@ -1,18 +1,11 @@
+#ifndef TEXT_EFFECTS_26_2_TEXT_EFFECTS_UTILS_GLSL
+#define TEXT_EFFECTS_26_2_TEXT_EFFECTS_UTILS_GLSL
+
 #moj_import <minecraft:common.glsl>
 #moj_import <minecraft:offset.glsl>
 #moj_import <minecraft:defaults.glsl>
 #moj_import <minecraft:rainbow.glsl>
-#moj_import <minecraft:wavy.glsl>
-#moj_import <minecraft:bouncy.glsl>
-#moj_import <minecraft:blinking.glsl>
-#moj_import <minecraft:pulse.glsl>
 #moj_import <minecraft:spin.glsl>
-#moj_import <minecraft:shake.glsl>
-#moj_import <minecraft:fade.glsl>
-#moj_import <minecraft:iterating.glsl>
-#moj_import <minecraft:glitch.glsl>
-#moj_import <minecraft:gradient.glsl>
-#moj_import <minecraft:scale.glsl>
 #moj_import <minecraft:text_effects_api.glsl>
 #moj_import <minecraft:apply_effect.glsl>
 
@@ -48,12 +41,10 @@ bool checkAndSetShadow(ivec3 c, vec4 target) {
 }
 
 // TEXT_EFFECT macro: matches a color (exact). Pass rgb()/rgba()/argb(); alpha ignored.
-#define TEXT_EFFECT(COLOR) \
-    if (colorMatches(c, COLOR))
+#define TEXT_EFFECT(COLOR) if (colorMatches(c, COLOR))
 
 // TEXT_EFFECT_WITH_SHADOW macro: matches a color AND its shadow (exact).
-#define TEXT_EFFECT_WITH_SHADOW(COLOR) \
-    if (checkAndSetShadow(c, COLOR))
+#define TEXT_EFFECT_WITH_SHADOW(COLOR) if (checkAndSetShadow(c, COLOR))
 
 void applyTextEffects() {
     vec4 vertex = vec4(Position, 1.0);
@@ -85,3 +76,5 @@ void applyTextEffects() {
     applyColorTexture();
     finalize();
 }
+
+#endif // TEXT_EFFECTS_26_2_TEXT_EFFECTS_UTILS_GLSL

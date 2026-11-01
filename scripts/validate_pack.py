@@ -10,6 +10,8 @@ import sys
 import zipfile
 from pathlib import Path, PurePosixPath
 
+from shader_tools import ResourceFormat, parse_format
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "assets/minecraft/shaders/include/_config.glsl"
@@ -64,6 +66,9 @@ ANIMATED_RANK_GRADIENTS = {
     "FCFCE8": RANK_GRADIENTS["F8FCF0"],
     "FCFCEC": RANK_GRADIENTS["F8FCF4"],
 }
+MAX_ZIP_ENTRIES = 10_000
+MAX_ZIP_ENTRY_BYTES = 64 * 1024 * 1024
+MAX_ZIP_TOTAL_BYTES = 256 * 1024 * 1024
 
 
 class ValidationError(RuntimeError):
@@ -90,17 +95,18 @@ def validate_metadata() -> None:
     pack = metadata["pack"]
     if pack.get("pack_format") != 16:
         raise ValidationError("pack.pack_format must remain 16 for the legacy fallback")
-    expected_range = {"min_inclusive": 7, "max_inclusive": 100}
+    expected_range = {"min_inclusive": 7, "max_inclusive": [97, 1]}
     if pack.get("supported_formats") != expected_range:
-        raise ValidationError("supported_formats must cover resource formats 7 through 100")
-    if (pack.get("min_format"), pack.get("max_format")) != (7, 100):
-        raise ValidationError("modern min_format/max_format must remain 7/100")
+        raise ValidationError("supported_formats must stop at tested resource format 97.1")
+    if (pack.get("min_format"), pack.get("max_format")) != (7, [97, 1]):
+        raise ValidationError("modern min_format/max_format must cover 7 through 97.1")
 
     expected_overlays = [
         ("1_21_2", 36, 56),
-        ("1_21_6", 57, 100),
+        ("1_21_6", 57, [97, 1]),
         ("26_1", 76, 87),
-        ("26_2", 88, 100),
+        ("26_2", 88, 96),
+        ("26_3", [97, 1], [97, 1]),
     ]
     entries = metadata.get("overlays", {}).get("entries", [])
     actual = [
@@ -110,8 +116,13 @@ def validate_metadata() -> None:
     if actual != expected_overlays:
         raise ValidationError(f"Unexpected overlay ranges: {actual!r}")
     for entry, (directory, minimum, maximum) in zip(entries, expected_overlays, strict=True):
-        if entry.get("formats") != {"min_inclusive": minimum, "max_inclusive": maximum}:
-            raise ValidationError(f"Legacy overlay range disagrees for {directory}")
+        if parse_format(entry["min_format"]) > parse_format(entry["max_format"], upper_bound=True):
+            raise ValidationError(f"Invalid major/minor overlay range for {directory}")
+        legacy = entry.get("formats", {})
+        if int(legacy.get("min_inclusive")) != parse_format(minimum).major:
+            raise ValidationError(f"Legacy overlay minimum disagrees for {directory}")
+        if int(legacy.get("max_inclusive")) != parse_format(maximum, upper_bound=True).major:
+            raise ValidationError(f"Legacy overlay maximum disagrees for {directory}")
         if not (ROOT / directory / "assets/minecraft/shaders").is_dir():
             raise ValidationError(f"Missing overlay shader tree: {directory}")
 
@@ -129,6 +140,16 @@ def validate_json_and_glsl() -> None:
             stripped = re.sub(r"//.*?$|/\*.*?\*/", "", text, flags=re.MULTILINE | re.DOTALL)
             if stripped.count("{") != stripped.count("}"):
                 raise ValidationError(f"Unbalanced braces: {path.relative_to(ROOT)}")
+
+    # TextEffects must not win ItemsAdder's merge precedence for unrelated
+    # item, entity, armor or terrain programs.
+    for core in ROOT.glob("**/assets/minecraft/shaders/core"):
+        for path in core.iterdir():
+            if path.is_file() and path.suffix in {".vsh", ".fsh", ".json"}:
+                if not (path.stem == "text" or path.stem.startswith("rendertype_text")):
+                    raise ValidationError(
+                        f"Unrelated core shader would override another pack: {path.relative_to(ROOT)}"
+                    )
 
 
 def validate_upstream_regressions() -> None:
@@ -157,11 +178,13 @@ def validate_upstream_regressions() -> None:
         if expected not in shader:
             raise ValidationError(f"Missing perspective-correct depth bias: {relative}")
 
-    text_26_2 = (ROOT / "26_2/assets/minecraft/shaders/core/text.fsh").read_text(
+    api_26_3 = (ROOT / "26_3/assets/minecraft/shaders/include/text_effects_api.glsl").read_text(
         encoding="utf-8"
     )
-    if "if (vertexColor.rgb == vec3(1.0, 1.0, 1.0))" not in text_26_2:
-        raise ValidationError("Minecraft 26.2 see-through fallback is missing")
+    if "apply_rank_gradient" not in api_26_3 or "apply_rank_dynamic_gradient" not in api_26_3:
+        raise ValidationError("Minecraft 26.3 overlay does not preserve the rank-gradient API")
+    if "paramScaleFactor = 0.0;" in api_26_3:
+        raise ValidationError("Minecraft 26.3 apply_offset resets scale to zero")
 
 
 def validate_26_2_hologram_visibility() -> None:
@@ -335,6 +358,86 @@ def validate_26_2_rank_stability() -> None:
         raise ValidationError("Minecraft 26.2 rank animation depends on the staged draw base")
 
 
+def validate_26_3_abi_and_stability() -> None:
+    base = ROOT / "26_3/assets/minecraft/shaders"
+    vertex = (base / "core/text.vsh").read_text(encoding="utf-8")
+    fragment = (base / "core/text.fsh").read_text(encoding="utf-8")
+    common = (base / "include/common.glsl").read_text(encoding="utf-8")
+    effect = (base / "include/apply_effect.glsl").read_text(encoding="utf-8")
+
+    for source, name in ((vertex, "text.vsh"), (fragment, "text.fsh")):
+        if "#extension GL_ARB_separate_shader_objects : require" not in source:
+            raise ValidationError(f"26.3 {name} is missing the official separate-shader ABI")
+        if "#include <minecraft:" not in source:
+            raise ValidationError(f"26.3 {name} does not use namespaced #include")
+        if "layout(location =" not in source:
+            raise ValidationError(f"26.3 {name} has no explicit interface locations")
+
+    required_oit = (
+        "#include <minecraft:oit.glsl>",
+        "#ifdef OIT_ACCUMULATE",
+        "sampleColorForAccumulation(color)",
+        "#ifdef OIT_ALPHA_ONLY",
+        "executeAlphaOnlyPhase(gl_FragCoord.z, color.a)",
+    )
+    missing = [snippet for snippet in required_oit if snippet not in fragment]
+    if missing:
+        raise ValidationError(f"26.3 OIT flow is incomplete: {missing!r}")
+    if fragment.count("ColorModulator") != 1:
+        raise ValidationError("26.3 must apply ColorModulator exactly once")
+    cutoff = fragment.find("if (color.a < 0.1) discard;")
+    oit_phase = fragment.find("executeAlphaOnlyPhase")
+    if not (0 <= cutoff < oit_phase):
+        raise ValidationError("26.3 alpha cutoff must precede the OIT alpha-only phase")
+
+    stable_helpers = (
+        "fract(UV0 * 256.0)",
+        "gl_VertexIndex - textEffectLocalVertexIndex()",
+        "(gl_Position.xy / safeW) * ScreenSize * 0.5",
+        "captureTextEffectSpinCorners",
+        "captureTextEffectFragmentCorners",
+    )
+    missing = [snippet for snippet in stable_helpers if snippet not in common]
+    if missing:
+        raise ValidationError(f"26.3 staged-buffer helpers are incomplete: {missing!r}")
+    for relative in (
+        "apply_effect.glsl", "spin.glsl", "rainbow.glsl", "gradient.glsl",
+        "bouncy.glsl", "pulse.glsl", "scale.glsl", "shake.glsl",
+    ):
+        source = (base / "include" / relative).read_text(encoding="utf-8")
+        stripped = re.sub(r"//.*?$|/\*.*?\*/", "", source, flags=re.MULTILINE | re.DOTALL)
+        if "gl_VertexIndex" in stripped:
+            raise ValidationError(f"Unstable direct vertex index remains in 26.3/{relative}")
+    for snippet in (
+        "rankGradientGlyphCorner()", "rankGradientScreenPosition()",
+        "textEffectCharacterIndex()", "captureTextEffectFragmentCorners(UV0)",
+    ):
+        if snippet not in effect:
+            raise ValidationError(f"26.3 effects bypass stable helper: {snippet}")
+    if "gl_Position.z" in effect:
+        raise ValidationError("26.2 depth bias was copied into the 26.3 OIT path")
+
+    atlas_corners = (
+        ((17.01 / 256.0, 31.01 / 256.0), (0, 0)),
+        ((17.01 / 256.0, 38.99 / 256.0), (0, 1)),
+        ((22.99 / 256.0, 38.99 / 256.0), (1, 1)),
+        ((22.99 / 256.0, 31.01 / 256.0), (1, 0)),
+    )
+    for draw_base in (0, 1, 37, 1026):
+        for glyph_index in (0, 1, 9):
+            corrected: set[int] = set()
+            for local_vertex, (uv, expected) in enumerate(atlas_corners):
+                corner = tuple(int((component * 256.0) % 1.0 >= 0.5) for component in uv)
+                if corner != expected:
+                    raise ValidationError("26.3 glyph corner fixture is unstable")
+                absolute = draw_base + glyph_index * 4 + local_vertex
+                corrected.add((absolute - local_vertex) // 4)
+            if len(corrected) != 1:
+                raise ValidationError(
+                    f"26.3 character ID splits at draw base {draw_base}, glyph {glyph_index}"
+                )
+
+
 def validate_color_registry() -> None:
     config = CONFIG.read_text(encoding="utf-8")
     entries: dict[str, tuple[re.Match[str], tuple[int, int, int]]] = {}
@@ -415,18 +518,31 @@ def validate_zip(path: Path) -> None:
     if not path.is_file():
         raise ValidationError(f"ZIP not found: {path}")
     allowed_roots = {
-        "pack.mcmeta", "pack.png", "LICENSE", "assets", "1_21_2", "1_21_6", "26_1", "26_2"
+        "pack.mcmeta", "pack.png", "LICENSE", "assets", "1_21_2", "1_21_6", "26_1", "26_2",
+        "26_3",
     }
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
+        infos = archive.infolist()
+        if len(infos) > MAX_ZIP_ENTRIES:
+            raise ValidationError(f"ZIP has too many entries: {len(infos)}")
+        expanded = 0
         if archive.testzip() is not None:
             raise ValidationError("ZIP CRC validation failed")
-        for name in names:
+        for info in infos:
+            name = info.filename
             pure = PurePosixPath(name)
             if name.startswith(("/", "\\")) or "\\" in name or ".." in pure.parts:
                 raise ValidationError(f"Unsafe ZIP entry: {name}")
             if pure.parts and pure.parts[0] not in allowed_roots:
                 raise ValidationError(f"Non-pack content in release ZIP: {name}")
+            if ((info.external_attr >> 16) & 0o170000) == 0o120000:
+                raise ValidationError(f"ZIP symlink is not allowed: {name}")
+            if info.file_size > MAX_ZIP_ENTRY_BYTES:
+                raise ValidationError(f"ZIP entry is too large: {name}")
+            expanded += info.file_size
+            if expanded > MAX_ZIP_TOTAL_BYTES:
+                raise ValidationError("ZIP expanded size exceeds 256 MiB")
         required = {"pack.mcmeta", "pack.png", "LICENSE"}
         if not required.issubset(names):
             raise ValidationError(f"ZIP root is missing: {sorted(required.difference(names))}")
@@ -434,6 +550,23 @@ def validate_zip(path: Path) -> None:
         source_meta = json.loads((ROOT / "pack.mcmeta").read_text(encoding="utf-8"))
         if archived_meta != source_meta:
             raise ValidationError("ZIP pack.mcmeta differs from the source tree")
+        required_26_3 = {
+            "26_3/assets/minecraft/shaders/core/text.vsh",
+            "26_3/assets/minecraft/shaders/core/text.fsh",
+            "26_3/assets/minecraft/shaders/include/text_effects_api.glsl",
+        }
+        if not required_26_3.issubset(names):
+            raise ValidationError(
+                f"ZIP is missing 26.3 shader content: {sorted(required_26_3.difference(names))}"
+            )
+        for name in names:
+            if not name.endswith((".glsl", ".vsh", ".fsh")):
+                continue
+            source = archive.read(name).decode("utf-8")
+            for line in source.splitlines():
+                if line.lstrip().startswith(("#include", "#moj_import", "#define", "#extension")):
+                    if not line.strip():
+                        raise ValidationError(f"Broken shader directive in ZIP: {name}")
 
 
 def main() -> int:
@@ -445,11 +578,12 @@ def main() -> int:
     validate_upstream_regressions()
     validate_26_2_hologram_visibility()
     validate_26_2_rank_stability()
+    validate_26_3_abi_and_stability()
     validate_color_registry()
     if args.zip:
         validate_zip(args.zip.resolve())
     print("OK: metadata, overlays, JSON, GLSL structure, 67 colors, shadows, "
-          "26.2 hologram visibility/effect stability, docs"
+          "26.2/26.3 hologram visibility/effect stability, 26.3 OIT ABI, docs"
           + (", and release ZIP" if args.zip else ""))
     return 0
 

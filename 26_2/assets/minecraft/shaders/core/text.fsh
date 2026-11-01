@@ -6,6 +6,7 @@
 
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:coverage.glsl>
 #moj_import <minecraft:text_data.glsl>
 #moj_import <minecraft:spin_effect.glsl>
 #moj_import <minecraft:outline_effect.glsl>
@@ -50,7 +51,8 @@ in float fshDisplayAlpha;
 
 out vec4 fragColor;
 
-void main() {
+vec4 textEffectsColor() {
+    vec4 effectColor;
     vec2 uv = texCoord0;
 
     // Apply spin effect
@@ -61,58 +63,58 @@ void main() {
     if (effectID == 1) {
         applyOutlineEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
                            fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                           Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                           Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 2) {
         applyHatchEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
                          fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                         GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                         GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 3) {
         applyNeonEffect(uv, fshEffectColor, fshEffectParams,
                         fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                        GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                        GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 5) {
         applySplitEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
-                         fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                         GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                            fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
+                            GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 6) {
         applyChromaticEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
                              fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                             GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                             GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 7) {
         applyExtrudeEffect(uv, fshBaseColor, fshEffectColor, fshExtrudeColor2, fshExtrudeColor3,
                            fshEffectParams,
                            fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                           Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                           Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 8) {
         applyNoiseEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
                          fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                         GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                         GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 9) {
         applyLiquidEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
                           fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                          GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                          GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     } else if (effectID == 10) {
         applyWaterEffect(uv, fshBaseColor, fshEffectColor, fshEffectParams,
                          fshGlyphT0, fshGlyphT1, fshGlyphT2, fshGlyphT3,
-                         GameTime, Sampler0, fragColor);
-        fragColor.a *= fshDisplayAlpha;
-        return;
+                         GameTime, Sampler0, effectColor);
+        effectColor.a *= fshDisplayAlpha;
+        return effectColor;
     }
 
 #ifdef IS_GRAYSCALE
@@ -120,38 +122,28 @@ void main() {
 #else
     vec4 texColor = texture(Sampler0, uv);
 #endif
+    return texColor * vertexColor;
+}
 
-#ifdef IS_SEE_THROUGH
-    vec4 color = texColor * vertexColor;
-#else
-    vec4 color = texColor * vertexColor * ColorModulator;
+vec4 calculateFinalColor(vec4 color) {
+#if !defined(IS_SEE_THROUGH) && !defined(IS_GUI)
+    color = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
+        FogEnvironmentalStart, FogEnvironmentalEnd,
+        FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 #endif
+    return color;
+}
 
-    // Create TextData struct for effect processing
-    TextData textData;
-    textData.uv = uv;
-    textData.spinT0 = spinT0;
-    textData.spinT1 = spinT1;
-    textData.spinT2 = spinT2;
-    textData.spinT3 = spinT3;
-    textData.color = color;
-    textData.vertexColor = vertexColor;
-
-    if (color.a < 0.1) {
-        discard;
-    }
-
+void main() {
+    vec4 color = textEffectsColor();
+#ifndef IS_SEE_THROUGH
+    color *= ColorModulator;
+#endif
+    // Follow vanilla 26.2's cutoff order for see-through versus normal text.
+    if (color.a < 0.1) discard;
 #ifdef IS_SEE_THROUGH
     fragColor = color * ColorModulator;
-#elif defined(IS_GUI)
-    fragColor = color;
 #else
-    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
-                          FogEnvironmentalStart, FogEnvironmentalEnd,
-                          FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+    fragColor = calculateFinalColor(color);
 #endif
-
-    if (vertexColor.rgb == vec3(1.0, 1.0, 1.0)) {
-        fragColor = color;
-    }
 }

@@ -48,12 +48,10 @@ bool checkAndSetShadow(ivec3 c, vec4 target) {
 }
 
 // TEXT_EFFECT macro: matches a color (exact). Pass rgb()/rgba()/argb(); alpha ignored.
-#define TEXT_EFFECT(COLOR) \
-    if (colorMatches(c, COLOR))
+#define TEXT_EFFECT(COLOR) if (colorMatches(c, COLOR))
 
 // TEXT_EFFECT_WITH_SHADOW macro: matches a color AND its shadow (exact).
-#define TEXT_EFFECT_WITH_SHADOW(COLOR) \
-    if (checkAndSetShadow(c, COLOR))
+#define TEXT_EFFECT_WITH_SHADOW(COLOR) if (checkAndSetShadow(c, COLOR))
 
 void applyTextEffects() {
     vec4 vertex = vec4(Position, 1.0);

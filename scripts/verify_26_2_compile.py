@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile and link every Minecraft 26.2 text shader permutation."""
+"""Compile/link the supported Minecraft 26.2 and 26.3 text shader variants."""
 
 from __future__ import annotations
 
@@ -7,15 +7,21 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
-import tempfile
+import uuid
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+
+from shader_tools import (
+    ResourceFormat, add_defines, client_resource_format, expand_includes,
+    make_loader, overlay_roots, resolve_pack,
+)
 
 
-ROOT = Path(__file__).resolve().parents[1]
-IMPORT_RE = re.compile(r"^[ \t]*#moj_import\s+<([^>]+)>[ \t]*$", re.MULTILINE)
-VARIANTS = {
+SOURCE_ROOT = Path(__file__).resolve().parents[1]
+TEMP_ROOT = Path("D:/ai/temp/text-effects-shader-compile")
+BASE_VARIANTS = {
     "world": (),
     "world_grayscale": ("IS_GRAYSCALE",),
     "see_through": ("IS_SEE_THROUGH",),
@@ -23,66 +29,69 @@ VARIANTS = {
     "gui": ("IS_GUI",),
     "gui_grayscale": ("IS_GUI", "IS_GRAYSCALE"),
 }
+OIT_BASE = (
+    "OIT", "OIT_COEFF_COUNT 8", "OIT_COEFF_ATTACHMENT_COUNT 2",
+    "OIT_WAVELET_RANK 3",
+)
+OIT_VARIANTS = {
+    "world_oit_accumulate": (*OIT_BASE, "OIT_ACCUMULATE"),
+    "world_grayscale_oit_accumulate": (*OIT_BASE, "OIT_ACCUMULATE", "IS_GRAYSCALE"),
+    "see_through_oit_accumulate": (*OIT_BASE, "OIT_ACCUMULATE", "IS_SEE_THROUGH"),
+    "world_oit_depth_bounds": (*OIT_BASE, "OIT_DEPTH_BOUNDS", "OIT_ALPHA_ONLY"),
+    "world_oit_transmittance": (*OIT_BASE, "OIT_TRANSMITTANCE", "OIT_ALPHA_ONLY"),
+    "see_through_oit_transmittance": (
+        *OIT_BASE, "OIT_TRANSMITTANCE", "OIT_ALPHA_ONLY", "IS_SEE_THROUGH",
+    ),
+}
+MAX_ARCHIVE_ENTRIES = 10_000
+MAX_ARCHIVE_ENTRY_BYTES = 64 * 1024 * 1024
+MAX_ARCHIVE_TOTAL_BYTES = 256 * 1024 * 1024
 
 
-def overlay_roots() -> list[Path]:
-    # These are the overlays active for resource format 88, in lookup order.
-    return [ROOT / "26_2", ROOT / "1_21_6", ROOT]
+def safe_extract(archive_path: Path, destination: Path) -> None:
+    with zipfile.ZipFile(archive_path) as archive:
+        infos = archive.infolist()
+        if len(infos) > MAX_ARCHIVE_ENTRIES:
+            raise RuntimeError(f"ZIP has too many entries: {len(infos)}")
+        total = 0
+        for info in infos:
+            name = info.filename
+            pure = PurePosixPath(name)
+            if name.startswith(("/", "\\")) or "\\" in name or ".." in pure.parts:
+                raise RuntimeError(f"unsafe ZIP entry: {name}")
+            mode = (info.external_attr >> 16) & 0o170000
+            if mode == 0o120000:
+                raise RuntimeError(f"ZIP symlink is not allowed: {name}")
+            if info.file_size > MAX_ARCHIVE_ENTRY_BYTES:
+                raise RuntimeError(f"ZIP entry is too large: {name}")
+            total += info.file_size
+            if total > MAX_ARCHIVE_TOTAL_BYTES:
+                raise RuntimeError("ZIP expanded size exceeds 256 MiB")
+        archive.extractall(destination)
 
 
-def import_path(identifier: str) -> str:
-    if ":" in identifier:
-        namespace, relative = identifier.split(":", 1)
-    else:
-        namespace, relative = "minecraft", identifier
-    return f"assets/{namespace}/shaders/include/{relative}"
+def safe_rmtree(path: Path) -> None:
+    resolved = path.resolve()
+    root = TEMP_ROOT.resolve()
+    if root not in resolved.parents or resolved == root:
+        raise RuntimeError(f"refusing to remove non-task temp path: {resolved}")
+    shutil.rmtree(resolved)
 
 
-def resolve_import(identifier: str, client: zipfile.ZipFile) -> tuple[str, str]:
-    relative = import_path(identifier)
-    for root in overlay_roots():
-        candidate = root / relative
-        if candidate.is_file():
-            return relative, candidate.read_text(encoding="utf-8")
-    try:
-        return relative, client.read(relative).decode("utf-8")
-    except KeyError as exc:
-        raise RuntimeError(f"Unresolved shader import <{identifier}>") from exc
+def compile_root(args: argparse.Namespace, work: Path) -> Path:
+    if args.pack_zip is None:
+        return SOURCE_ROOT
+    root = work / "pack"
+    root.mkdir()
+    safe_extract(args.pack_zip.resolve(), root)
+    return root
 
 
-def expand_imports(
-    text: str,
-    client: zipfile.ZipFile,
-    stack: tuple[str, ...] = (),
-    imported_paths: set[str] | None = None,
-) -> str:
-    if imported_paths is None:
-        imported_paths = set()
-
-    def replace(match: re.Match[str]) -> str:
-        relative, imported = resolve_import(match.group(1), client)
-        if relative in stack:
-            chain = " -> ".join((*stack, relative))
-            raise RuntimeError(f"Recursive shader import: {chain}")
-        if relative in imported_paths:
-            return ""
-        imported_paths.add(relative)
-        # Mojang's 26.2 include files may carry their own #version directive;
-        # the game's import processor removes it when composing a core shader.
-        imported = re.sub(r"^#version[^\r\n]*(?:\r?\n)?", "", imported, count=1)
-        return expand_imports(imported, client, (*stack, relative), imported_paths)
-
-    return IMPORT_RE.sub(replace, text)
-
-
-def add_defines(text: str, defines: tuple[str, ...]) -> str:
-    # Apply GLSL's escaped-newline splicing before handing the expanded source
-    # to glslang; Mojang's processor does the same for multiline macros.
-    text = text.replace("\\\r\n", "").replace("\\\n", "")
-    lines = text.splitlines()
-    if not lines or not lines[0].startswith("#version "):
-        raise RuntimeError("Shader entry point has no #version directive")
-    return "\n".join((lines[0], *(f"#define {name}" for name in defines), *lines[1:])) + "\n"
+def command_result(command: list[str], name: str) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(f"{name} failed:\n{result.stdout}{result.stderr}")
+    return result
 
 
 def main() -> int:
@@ -90,6 +99,7 @@ def main() -> int:
     parser.add_argument("--client-jar", type=Path, required=True)
     parser.add_argument("--expected-client-sha1", required=True)
     parser.add_argument("--glslang", type=Path, required=True)
+    parser.add_argument("--pack-zip", type=Path)
     args = parser.parse_args()
     client_jar = args.client_jar.resolve()
     glslang = args.glslang.resolve()
@@ -99,76 +109,82 @@ def main() -> int:
         raise FileNotFoundError(glslang)
     actual_sha1 = hashlib.sha1(client_jar.read_bytes()).hexdigest()
     if actual_sha1.lower() != args.expected_client_sha1.lower():
-        raise RuntimeError(
-            f"Minecraft 26.2 client SHA-1 mismatch: {actual_sha1}"
-        )
+        raise RuntimeError(f"Minecraft client SHA-1 mismatch: {actual_sha1}")
 
-    vertex_source = ROOT / "26_2/assets/minecraft/shaders/core/text.vsh"
-    fragment_source = ROOT / "26_2/assets/minecraft/shaders/core/text.fsh"
-    with zipfile.ZipFile(client_jar) as client, tempfile.TemporaryDirectory(
-        prefix="text-effects-26.2-compile-"
-    ) as directory:
-        output = Path(directory)
-        version = json.loads(client.read("version.json"))
-        if version.get("id") != "26.2":
-            raise RuntimeError(f"Expected Minecraft 26.2 client, got {version.get('id')!r}")
-        resource_format = version["pack_version"].get("resource_major")
-        if resource_format is None:
-            resource = version["pack_version"]["resource"]
-            resource_format = resource[0] if isinstance(resource, list) else resource
-        if resource_format != 88:
-            raise RuntimeError(f"Unexpected 26.2 resource format: {resource_format}")
-        for source in (vertex_source, fragment_source):
-            vanilla_path = f"assets/minecraft/shaders/core/{source.name}"
-            vanilla_glsl = client.read(vanilla_path).decode("utf-8").splitlines()[0]
-            pack_glsl = source.read_text(encoding="utf-8").splitlines()[0]
-            if int(pack_glsl.split()[1]) < int(vanilla_glsl.split()[1]):
-                raise RuntimeError(f"GLSL ABI is older than vanilla in {source.name}")
-        vertex = expand_imports(vertex_source.read_text(encoding="utf-8"), client)
-        fragment = expand_imports(fragment_source.read_text(encoding="utf-8"), client)
-        for name, defines in VARIANTS.items():
-            vertex_path = output / f"{name}.vert"
-            fragment_path = output / f"{name}.frag"
-            vertex_path.write_text(add_defines(vertex, defines), encoding="utf-8")
-            fragment_path.write_text(add_defines(fragment, defines), encoding="utf-8")
-            preprocessed = subprocess.run(
-                [str(glslang), "-E", str(vertex_path)],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-            if preprocessed.returncode:
+    TEMP_ROOT.mkdir(parents=True, exist_ok=True)
+    work = TEMP_ROOT / uuid.uuid4().hex
+    work.mkdir()
+    try:
+        root = compile_root(args, work)
+        with zipfile.ZipFile(client_jar) as client:
+            version = json.loads(client.read("version.json"))
+            resource_format = client_resource_format(version)
+            if resource_format not in (ResourceFormat(88), ResourceFormat(97, 1)):
                 raise RuntimeError(
-                    f"{name} failed to preprocess:\n"
-                    f"{preprocessed.stdout}{preprocessed.stderr}"
+                    f"Expected Minecraft 26.2/26.3 resource format, got {resource_format}"
                 )
-            has_reversed_depth_bias = bool(
-                re.search(
-                    r"gl_Position\s*\.\s*z\s*\+=\s*gl_Position\s*\.\s*w\s*\*\s*0\.001",
-                    preprocessed.stdout,
-                )
+            vertex_relative = "assets/minecraft/shaders/core/text.vsh"
+            fragment_relative = "assets/minecraft/shaders/core/text.fsh"
+            vertex_source = resolve_pack(root, vertex_relative, resource_format)
+            fragment_source = resolve_pack(root, fragment_relative, resource_format)
+            if vertex_source is None or fragment_source is None:
+                raise RuntimeError("effective text shader entry points are missing")
+            loader = make_loader(root, resource_format, client)
+            vertex, _ = expand_includes(
+                vertex_source.read_text(encoding="utf-8"), loader, deduplicate=True
             )
-            expects_reversed_depth_bias = name.startswith("world")
-            if has_reversed_depth_bias != expects_reversed_depth_bias:
-                raise RuntimeError(
-                    f"{name} has incorrect 26.2 hologram depth-bias state"
-                )
-            result = subprocess.run(
-                [str(glslang), "-l", str(vertex_path), str(fragment_path)],
-                check=False,
-                capture_output=True,
-                text=True,
+            fragment, _ = expand_includes(
+                fragment_source.read_text(encoding="utf-8"), loader, deduplicate=True
             )
-            if result.returncode:
-                raise RuntimeError(
-                    f"{name} failed to compile/link:\n{result.stdout}{result.stderr}"
+            variants = dict(BASE_VARIANTS)
+            if resource_format >= ResourceFormat(97, 1):
+                variants.update(OIT_VARIANTS)
+
+            # 26.3's RenderPearl/Vulkan-flavoured source names the built-in
+            # gl_VertexIndex. Desktop OpenGL glslang exposes the equivalent
+            # base-inclusive value as gl_VertexID.
+            backend_defines = (
+                ("gl_VertexIndex gl_VertexID",)
+                if resource_format >= ResourceFormat(97, 1)
+                else ()
+            )
+
+            output = work / "expanded"
+            output.mkdir()
+            for name, defines in variants.items():
+                vertex_path = output / f"{name}.vert"
+                fragment_path = output / f"{name}.frag"
+                vertex_text = add_defines(vertex, (*backend_defines, *defines))
+                fragment_text = add_defines(fragment, (*backend_defines, *defines))
+                vertex_path.write_text(vertex_text, encoding="utf-8")
+                fragment_path.write_text(fragment_text, encoding="utf-8")
+                pre_v = command_result([str(glslang), "-E", str(vertex_path)], f"{name} vertex preprocess")
+                pre_f = command_result([str(glslang), "-E", str(fragment_path)], f"{name} fragment preprocess")
+                if resource_format == ResourceFormat(88):
+                    has_bias = bool(re.search(
+                        r"gl_Position\s*\.\s*z\s*\+=\s*gl_Position\s*\.\s*w\s*\*\s*0\.001",
+                        pre_v.stdout,
+                    ))
+                    if has_bias != name.startswith("world"):
+                        raise RuntimeError(f"{name} has incorrect 26.2 depth-bias state")
+                elif re.search(r"gl_Position\s*\.\s*z\s*[+-]=", pre_v.stdout):
+                    raise RuntimeError(f"{name} copied a legacy depth bias into 26.3")
+                command_result(
+                    [str(glslang), "-l", str(vertex_path), str(fragment_path)],
+                    f"{name} compile/link",
                 )
-            print(f"OK {name:>25} | compiled and linked")
-    print(
-        f"OK: {len(VARIANTS)} Minecraft 26.2 shader variants "
-        f"against SHA-1 {actual_sha1}"
-    )
-    return 0
+                print(
+                    f"OK {name:>34} | linked | preprocessed "
+                    f"v={len(pre_v.stdout.encode('utf-8'))} f={len(pre_f.stdout.encode('utf-8'))} bytes"
+                )
+        print(
+            f"OK: {len(variants)} Minecraft {version.get('id')} shader variants "
+            f"against SHA-1 {actual_sha1}; overlays="
+            + ",".join(path.name for path in overlay_roots(root, resource_format)[:-1])
+        )
+        return 0
+    finally:
+        safe_rmtree(work)
 
 
 if __name__ == "__main__":
