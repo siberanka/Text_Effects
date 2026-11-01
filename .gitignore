@@ -3,3 +3,5 @@ default/
 dist/
 __pycache__/
 *.pyc
+ai/
+graphify-out/
