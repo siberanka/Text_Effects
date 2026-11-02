@@ -171,8 +171,8 @@ Paket shake, wavy, rainbow, bouncy, blinking, pulse, spin, sequential spin, fade
 
 ```sh
 python scripts/validate_pack.py
-python scripts/build_release.py --output dist/Text-Effects-v1.3.1.zip
-python scripts/validate_pack.py --zip dist/Text-Effects-v1.3.1.zip
+python scripts/build_release.py --output dist/Text-Effects-v1.3.2.zip
+python scripts/validate_pack.py --zip dist/Text-Effects-v1.3.2.zip
 ```
 
 Mojang'ın SHA-1 doğrulamalı resmî istemci JAR'larıyla shader ABI sınır kontrolü:

@@ -1,6 +1,6 @@
 # Sunucu ve Haritalarda Kullanım Rehberi
 
-Bu rehber `siberanka/Text_Effects` v1.3.1 paketini Minecraft Java Edition 1.17.x–26.x istemcilerinde rütbe, prefix, başlık, actionbar ve harita metinlerinde kullanmak içindir.
+Bu rehber `siberanka/Text_Effects` v1.3.2 paketini Minecraft Java Edition 1.17.x–26.3 istemcilerinde rütbe, prefix, başlık, actionbar ve harita metinlerinde kullanmak içindir.
 
 ## 1. Temel kural
 
@@ -21,7 +21,7 @@ Akan varyantlarda koyu kaynak renk ile açık tamamlayıcı sürekli yer değiş
 
 ## 2. Paketi istemciye kurma
 
-1. Release sayfasından `Text-Effects-v1.3.1.zip` dosyasını indirin.
+1. Release sayfasından `Text-Effects-v1.3.2.zip` dosyasını indirin.
 2. ZIP'i açmadan `.minecraft/resourcepacks/` içine koyun.
 3. Minecraft'ta **Ayarlar → Kaynak Paketleri** ekranından etkinleştirin.
 4. Paket 1.17–1.20.1'de eski istemcilerin metadata sınırlaması nedeniyle uyumsuz görünebilir. Uyarıyı onaylayıp yükleyin.
@@ -32,13 +32,13 @@ Akan varyantlarda koyu kaynak renk ile açık tamamlayıcı sürekli yer değiş
 ZIP'i doğrudan HTTPS indirme bağlantısı veren bir adreste barındırın. GitLab release bağlantısı:
 
 ```text
-https://gitlab.com/api/v4/projects/85741336/packages/generic/github-release-assets/v1.3.1/Text-Effects-v1.3.1.zip
+https://gitlab.com/api/v4/projects/85741336/packages/generic/github-release-assets/v1.3.2/Text-Effects-v1.3.2.zip
 ```
 
 `server.properties` örneği:
 
 ```properties
-resource-pack=https://gitlab.com/api/v4/projects/85741336/packages/generic/github-release-assets/v1.3.1/Text-Effects-v1.3.1.zip
+resource-pack=https://gitlab.com/api/v4/projects/85741336/packages/generic/github-release-assets/v1.3.2/Text-Effects-v1.3.2.zip
 resource-pack-sha1=609814d3b46a055db36a9137da6e97e3f91654c2
 require-resource-pack=true
 resource-pack-prompt={"text":"Rütbe gradyanlarını görebilmek için kaynak paketini kabul etmelisiniz.","color":"yellow"}
@@ -54,11 +54,11 @@ SHA-256 10CF5D8667BAED2ECA63A36FAD3BE5E4B7657D3FB14FD3C17FEDF697427BBE3B
 Paketi değiştirdiğinizde ZIP'i yeniden üretin ve `resource-pack-sha1` değerini de değiştirin. Hash almak için:
 
 ```powershell
-Get-FileHash -Algorithm SHA1 .\Text-Effects-v1.3.1.zip
+Get-FileHash -Algorithm SHA1 .\Text-Effects-v1.3.2.zip
 ```
 
 ```sh
-sha1sum Text-Effects-v1.3.1.zip
+sha1sum Text-Effects-v1.3.2.zip
 ```
 
 Sunucuyu yeniden başlattıktan sonra temiz bir istemci profiliyle bağlanın. İstemci daha önce aynı URL'den farklı içerik önbelleğe aldıysa URL'ye yeni sürüm etiketi verin.
